@@ -1,0 +1,63 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-hybrid/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/SpikeLMo/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/neuromod/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-reward/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-telemetry/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-spine/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-ingest/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: unused import: `crate::telemetry::CryptoAsset`
+ --> spikenaut-reward/src/mining_reward/state.rs:2:5
+  |
+2 | use crate::telemetry::CryptoAsset;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `spikenaut-reward` (lib) generated 1 warning (run `cargo fix --lib -p spikenaut-reward` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src/lib.rs (/home/raulmc/target/debug/deps/spikenaut_reward-7f3d064f11b179c6)
+
+running 18 tests
+test mining_reward::q8::tests::q8_8_conversion_roundtrip ... ok
+test mining_reward::state::tests::ema_smoothing_dampens_spikes ... ok
+test mining_reward::state::tests::cpu_thermal_zen5_no_chronic_pain ... ok
+test mining_reward::state::tests::homeostatic_bell_curve ... ok
+test mining_reward::state::tests::power_excess_penalty ... ok
+test mining_reward::state::tests::optimal_conditions_positive_reward ... ok
+test mining_reward::state::tests::reward_clamp_prevents_saturation ... ok
+test mining_reward::state::tests::monero_low_hashrate_normalization ... ok
+test mining_reward::state::tests::thermal_stress_negative ... ok
+test mining_reward::state::tests::kaspa_high_hashrate_normalization ... ok
+test modulators::tests::decay_constants_ordering ... ok
+test modulators::tests::fpga_reward_gate_blocks_during_thermal_stress ... ok
+test modulators::tests::fpga_reward_gate_passes_during_healthy_mining ... ok
+test mining_reward::state::tests::zero_hashrate_near_zero_efficiency ... ok
+test modulators::tests::heat_stress_activates_above_threshold ... ok
+test modulators::tests::heat_stress_zero_at_normal_temps ... ok
+test modulators::tests::heat_stress_zero_when_sensor_absent ... ok
+test modulators::tests::mining_dopamine_decay_preserves_sign ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests spikenaut_reward
+
+running 1 test
+test spikenaut-reward/src/lib.rs - (line 24) ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+all doctests ran in 0.09s; merged doctests compilation took 0.09s

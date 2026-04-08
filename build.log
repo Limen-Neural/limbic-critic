@@ -1,0 +1,34 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-hybrid/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/SpikeLMo/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/neuromod/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-reward/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-telemetry/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-spine/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/raulmc/spikenaut-ingest/Cargo.toml
+workspace: /home/raulmc/Cargo.toml
+    Checking serde_core v1.0.228
+    Checking serde v1.0.228
+    Checking spikenaut-reward v0.1.0 (/home/raulmc/spikenaut-reward)
+warning: unused import: `crate::telemetry::CryptoAsset`
+ --> spikenaut-reward/src/mining_reward/state.rs:2:5
+  |
+2 | use crate::telemetry::CryptoAsset;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `spikenaut-reward` (lib) generated 1 warning (run `cargo fix --lib -p spikenaut-reward` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.77s
