@@ -76,10 +76,23 @@ Smoothed: R_ema(t) = (1-λ) · R_ema(t-1) + λ · R(t)
 
 ## Modular Structure
 
-The crate is organized into focused submodules for clarity:
-- `mining_reward`: Core reward state machine and configuration.
-- `modulators`: Neuromodulator bank and telemetry mapping.
-- `telemetry`: Common types and `CryptoAsset` definitions.
+The crate is organized into focused submodules for clarity and maintainability:
+
+```
+src/
+├── lib.rs                     # Public re-exports
+├── mining_reward/
+│   ├── mod.rs                 # Module root
+│   ├── config.rs              # HomeostasisSpecs & CryptoAsset targets
+│   ├── state.rs               # MiningRewardState & RewardableState trait
+│   └── q8.rs                  # Q8.8 fixed-point conversion
+├── modulators.rs              # NeuroModulators bank & telemetry mapping
+└── telemetry.rs               # Common types & trait definitions
+```
+
+- **`mining_reward`**: Core reward state machine, homeostasis configuration, and Q8.8 fixed-point math.
+- **`modulators`**: Neuromodulator bank (dopamine, cortisol, acetylcholine, etc.) with asset-calibrated telemetry mapping.
+- **`telemetry`**: Shared types, the `RewardableState` trait, and `CryptoAsset` enum.
 
 ## License
 
