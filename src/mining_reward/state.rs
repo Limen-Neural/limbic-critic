@@ -1,124 +1,11 @@
-//! Mining Efficiency Dopamine Reward Framework
-//!
-//! Computes a multi-dimensional reward signal from hardware telemetry,
-//! treating mining efficiency as a biological survival signal for the SNN.
-//!
-//! Core equation: R = α·MiningEfficiency − β·ThermalStress − γ·EnergyWaste
-//!
-//! The output `mining_dopamine` is EMA-smoothed and fed into the STDP
-//! learning rate blend in `engine.rs`, gating synaptic plasticity based
-//! on whether the system is operating within its homeostatic envelope.
+use crate::RewardableState;
 
-use crate::telemetry::GpuTelemetry;
-
-// ── Reward component weights ─────────────────────────────────────────────────
-
-/// Weight for the positive mining-efficiency term.
-const ALPHA_EFFICIENCY: f32 = 0.6;
-
-/// Weight for the thermal/power stress penalty.
-const BETA_THERMAL: f32 = 0.3;
-
-/// Weight for the energy-waste penalty.
-const GAMMA_WASTE: f32 = 0.1;
-
-// ── EMA smoothing ────────────────────────────────────────────────────────────
-
-/// EMA blending factor for the instant reward (0.1 = 10-tick window ≈ 1 s).
-const EMA_ALPHA: f32 = 0.1;
-
-/// Hard clamp on the final EMA-smoothed reward.  Prevents saturation so that
-/// the STDP blend always retains some influence from the event-driven dopamine.
-const REWARD_CLAMP: f32 = 0.8;
-
-// ── Thermal / power thresholds ───────────────────────────────────────────────
-
-/// GPU temperature at which the thermal penalty kicks in (°C).
-/// Matches NVIDIA's thermal throttle onset for the RTX 5080.
-const GPU_THERMAL_PENALTY_ONSET: f32 = 85.0;
-
-/// GPU thermal penalty divisor — maps [onset, onset+10] → [0, 1].
-const GPU_THERMAL_DIVISOR: f32 = 10.0;
-
-/// CPU temperature at which the thermal penalty kicks in (°C).
-/// Zen 5 (Ryzen 9 9950X) is designed to boost aggressively; Tctl regularly
-/// sits at 75–80 °C under sustained all-core load.  Penalising below 85 °C
-/// would put the SNN in a state of "chronic pain" during normal syncs.
-const CPU_THERMAL_PENALTY_ONSET: f32 = 85.0;
-
-/// CPU thermal penalty divisor — maps [onset, onset+10] → [0, 1].
-const CPU_THERMAL_DIVISOR: f32 = 10.0;
-
-/// GPU power draw at which the power-excess penalty starts (W).
-const POWER_PENALTY_ONSET: f32 = 400.0;
-
-/// Power penalty divisor — maps [onset, onset+50] → [0, 1].
-const POWER_PENALTY_DIVISOR: f32 = 50.0;
-
-// ── Efficiency normalisation ─────────────────────────────────────────────────
-
-/// Target hashrate (MH/s) used to normalise the hashrate stability delta.
-/// 0.015 MH/s ≈ RTX 5080 Dynex peak (slightly above the 0.0105 midpoint
-/// used for the base dopamine signal, giving headroom before saturation).
-const TARGET_HASHRATE_MH: f32 = 0.015;
-
-/// Target efficiency (MH/s per watt) = TARGET_HASHRATE / OPTIMAL_POWER.
-const TARGET_EFFICIENCY: f32 = TARGET_HASHRATE_MH / 350.0;
-
-/// Nominal RTX 5080 boost clock (MHz).  Used to detect thermal throttling.
-const NOMINAL_CLOCK_MHZ: f32 = 2640.0;
-
-/// Clock floor below which we consider the GPU severely throttled.
-const THROTTLE_CLOCK_FLOOR: f32 = 2000.0;
-
-/// Throttle clock range for proportional penalty.
-const THROTTLE_CLOCK_RANGE: f32 = NOMINAL_CLOCK_MHZ - THROTTLE_CLOCK_FLOOR;
-
-// ── Q8.8 helpers ─────────────────────────────────────────────────────────────
-
-/// Maximum representable value in unsigned Q8.8 (0xFF.FF = 255 + 255/256).
-const Q8_8_MAX: u16 = 0xFFFF;
-
-/// Convert a `[0.0, 1.0]` reward to Q8.8 fixed-point (unsigned).
-///
-/// Clamps to `[0.0, 1.0]` before conversion and caps the result at
-/// `Q8_8_MAX` to prevent bit-overflow during reward spikes.
-#[inline]
-pub fn reward_to_q8_8(reward: f32) -> u16 {
-    let clamped = reward.clamp(0.0, 1.0);
-    let raw = (clamped * 256.0) as u32; // u32 intermediate prevents u16 overflow
-    (raw.min(Q8_8_MAX as u32)) as u16
-}
-
-// ── Homeostatic setpoints ────────────────────────────────────────────────────
-
-/// Optimal operating-point targets for the RTX 5080 + Ryzen 9 9950X system.
-#[derive(Debug, Clone, Copy)]
-pub struct ThermalSetpoint {
-    /// GPU junction temperature sweet-spot (°C).
-    pub optimal_gpu_temp_c: f32,
-    /// CPU Tctl sweet-spot (°C).  Zen 5 runs hotter by design.
-    pub optimal_cpu_temp_c: f32,
-    /// Target board power (W) — below TDP but above idle.
-    pub optimal_power_w: f32,
-    /// Temperature tolerance band (°C) — beyond optimal ± tolerance the
-    /// homeostatic reward goes negative.
-    pub temp_tolerance_c: f32,
-    /// Power tolerance band (W).
-    pub power_tolerance_w: f32,
-}
-
-impl Default for ThermalSetpoint {
-    fn default() -> Self {
-        Self {
-            optimal_gpu_temp_c: 75.0,
-            optimal_cpu_temp_c: 70.0, // Zen 5 — designed to boost high
-            optimal_power_w: 350.0,
-            temp_tolerance_c: 15.0,
-            power_tolerance_w: 80.0,
-        }
-    }
-}
+use super::config::{
+    ALPHA_EFFICIENCY, BETA_THERMAL, GAMMA_WASTE, EMA_ALPHA, REWARD_CLAMP,
+    GPU_THERMAL_PENALTY_ONSET, GPU_THERMAL_DIVISOR, CPU_THERMAL_PENALTY_ONSET, CPU_THERMAL_DIVISOR,
+    POWER_PENALTY_ONSET, POWER_PENALTY_DIVISOR, NOMINAL_CLOCK_MHZ, THROTTLE_CLOCK_FLOOR,
+    THROTTLE_CLOCK_RANGE, HomeostasisSpecs, ThermalSetpoint,
+};
 
 // ── Reward state machine ─────────────────────────────────────────────────────
 
@@ -131,7 +18,7 @@ pub struct MiningRewardState {
     /// Homeostatic operating-point targets.
     pub setpoint: ThermalSetpoint,
     /// Exponential moving average of the composite reward.
-    ema_reward: f32,
+    pub ema_reward: f32,
     /// Previous-tick normalised hashrate (for stability delta).
     prev_hashrate_norm: f32,
     /// Ticks where the GPU was NOT throttled (clock ≥ THROTTLE_CLOCK_FLOOR).
@@ -170,24 +57,25 @@ impl MiningRewardState {
     /// No `Vec`, `String`, `Box`, or any heap allocation.
     pub fn compute(
         &mut self,
-        telem: &GpuTelemetry,
+        telem: &impl RewardableState,
+        specs: &HomeostasisSpecs,
         cpu_temp_c: Option<f32>,
     ) -> f32 {
         // ── bookkeeping ──────────────────────────────────────────────
         self.total_ticks += 1;
-        if telem.gpu_clock_mhz >= THROTTLE_CLOCK_FLOOR {
+        if telem.gpu_clock_mhz() >= THROTTLE_CLOCK_FLOOR {
             self.uptime_ticks += 1;
         }
 
         // ── 1. Mining Efficiency (positive term) ─────────────────────
         let hashrate_norm =
-            (telem.hashrate_mh / TARGET_HASHRATE_MH).clamp(0.0, 1.0);
+            (telem.hashrate_mh() / specs.target_hashrate_mh).clamp(0.0, 1.0);
         let hashrate_stability =
             1.0 - (hashrate_norm - self.prev_hashrate_norm).abs();
         self.prev_hashrate_norm = hashrate_norm;
 
-        let hash_per_watt = (telem.hashrate_mh / telem.power_w.max(1.0))
-            / TARGET_EFFICIENCY;
+        let hash_per_watt = (telem.hashrate_mh() / telem.power_w().max(1.0))
+            / specs.target_efficiency;
         let hash_per_watt_clamped = hash_per_watt.clamp(0.0, 1.0);
 
         let uptime_ratio = if self.total_ticks > 0 {
@@ -200,11 +88,11 @@ impl MiningRewardState {
             hashrate_stability * hash_per_watt_clamped * uptime_ratio;
 
         // ── 2. Thermal Stress (negative term) ────────────────────────
-        let gpu_thermal = ((telem.gpu_temp_c - GPU_THERMAL_PENALTY_ONSET)
+        let gpu_thermal = ((telem.gpu_temp_c() - GPU_THERMAL_PENALTY_ONSET)
             / GPU_THERMAL_DIVISOR)
             .clamp(0.0, 1.0);
 
-        let power_excess = ((telem.power_w - POWER_PENALTY_ONSET)
+        let power_excess = ((telem.power_w() - POWER_PENALTY_ONSET)
             / POWER_PENALTY_DIVISOR)
             .clamp(0.0, 1.0);
 
@@ -221,8 +109,8 @@ impl MiningRewardState {
             gpu_thermal.max(power_excess).max(cpu_thermal);
 
         // ── 3. Energy Waste (negative term) ──────────────────────────
-        let throttle_penalty = if telem.gpu_clock_mhz < NOMINAL_CLOCK_MHZ {
-            ((NOMINAL_CLOCK_MHZ - telem.gpu_clock_mhz) / THROTTLE_CLOCK_RANGE)
+        let throttle_penalty = if telem.gpu_clock_mhz() < NOMINAL_CLOCK_MHZ {
+            ((NOMINAL_CLOCK_MHZ - telem.gpu_clock_mhz()) / THROTTLE_CLOCK_RANGE)
                 .clamp(0.0, 1.0)
         } else {
             0.0
@@ -268,67 +156,81 @@ impl MiningRewardState {
 mod tests {
     use super::*;
 
-    /// Helper: build a `GpuTelemetry` with the given overrides on top of
-    /// "healthy RTX 5080" defaults.
+    struct MockTelem {
+        hashrate_mh: f32,
+        power_w: f32,
+        gpu_temp_c: f32,
+        gpu_clock_mhz: f32,
+    }
+
+    impl RewardableState for MockTelem {
+        fn hashrate_mh(&self) -> f32 { self.hashrate_mh }
+        fn power_w(&self) -> f32 { self.power_w }
+        fn gpu_temp_c(&self) -> f32 { self.gpu_temp_c }
+        fn gpu_clock_mhz(&self) -> f32 { self.gpu_clock_mhz }
+        fn vddcr_gfx_v(&self) -> f32 { 1.0 }
+        fn ocean_intel(&self) -> f32 { 0.0 }
+    }
+
+    /// Helper: build a mock telemetry with the given overrides.
     fn telem(
         hashrate_mh: f32,
         power_w: f32,
         gpu_temp_c: f32,
         gpu_clock_mhz: f32,
-    ) -> GpuTelemetry {
-        GpuTelemetry {
+    ) -> MockTelem {
+        MockTelem {
             hashrate_mh,
             power_w,
             gpu_temp_c,
             gpu_clock_mhz,
-            vddcr_gfx_v: 1.0,
-            fan_speed_pct: 60.0,
-            mem_clock_mhz: 2400.0,
-            ..Default::default()
         }
     }
 
     #[test]
     fn optimal_conditions_positive_reward() {
         let mut state = MiningRewardState::new();
+        let specs = HomeostasisSpecs::default();
         // Prime the EMA with one tick so prev_hashrate_norm is set.
         let t = telem(0.012, 340.0, 72.0, 2640.0);
-        state.compute(&t, Some(68.0));
+        state.compute(&t, &specs, Some(68.0));
 
         // Second tick at same conditions — stability = 1.0.
-        let r = state.compute(&t, Some(68.0));
+        let r = state.compute(&t, &specs, Some(68.0));
         assert!(r > 0.0, "optimal conditions should yield positive reward, got {r}");
     }
 
     #[test]
     fn thermal_stress_negative() {
         let mut state = MiningRewardState::new();
+        let specs = HomeostasisSpecs::default();
         // Thermal emergency: 95°C GPU + throttled clock + excess power.
         // When the GPU is thermally throttling, hashrate drops AND temp is high.
         let t = telem(0.003, 440.0, 95.0, 1900.0);
         // Warm up EMA.
         for _ in 0..20 {
-            state.compute(&t, Some(68.0));
+            state.compute(&t, &specs, Some(68.0));
         }
-        let r = state.compute(&t, Some(68.0));
+        let r = state.compute(&t, &specs, Some(68.0));
         assert!(r < 0.0, "thermal emergency should produce negative reward, got {r}");
     }
 
     #[test]
     fn power_excess_penalty() {
         let mut state = MiningRewardState::new();
+        let specs = HomeostasisSpecs::default();
         let t = telem(0.012, 450.0, 72.0, 2640.0); // 450W
         for _ in 0..20 {
-            state.compute(&t, Some(68.0));
+            state.compute(&t, &specs, Some(68.0));
         }
-        let r_high_power = state.compute(&t, Some(68.0));
+        let r_high_power = state.compute(&t, &specs, Some(68.0));
 
         let mut state2 = MiningRewardState::new();
         let t2 = telem(0.012, 300.0, 72.0, 2640.0); // 300W
         for _ in 0..20 {
-            state2.compute(&t2, Some(68.0));
+            state2.compute(&t2, &specs, Some(68.0));
         }
-        let r_low_power = state2.compute(&t2, Some(68.0));
+        let r_low_power = state2.compute(&t2, &specs, Some(68.0));
 
         assert!(
             r_low_power > r_high_power,
@@ -339,16 +241,17 @@ mod tests {
     #[test]
     fn ema_smoothing_dampens_spikes() {
         let mut state = MiningRewardState::new();
+        let specs = HomeostasisSpecs::default();
         let good = telem(0.012, 340.0, 72.0, 2640.0);
         // Build up positive EMA.
         for _ in 0..50 {
-            state.compute(&good, Some(68.0));
+            state.compute(&good, &specs, Some(68.0));
         }
         let before = state.ema_reward;
 
         // Sudden bad tick.
         let bad = telem(0.001, 450.0, 95.0, 1800.0);
-        let after = state.compute(&bad, Some(92.0));
+        let after = state.compute(&bad, &specs, Some(92.0));
 
         // EMA should not crash all the way to the raw bad value.
         assert!(
@@ -364,11 +267,12 @@ mod tests {
     #[test]
     fn zero_hashrate_near_zero_efficiency() {
         let mut state = MiningRewardState::new();
+        let specs = HomeostasisSpecs::default();
         let t = telem(0.0, 150.0, 55.0, 2640.0); // idle GPU
         for _ in 0..20 {
-            state.compute(&t, None);
+            state.compute(&t, &specs, None);
         }
-        let r = state.compute(&t, None);
+        let r = state.compute(&t, &specs, None);
         // Should be slightly negative (energy waste from power_inefficiency)
         // but not a severe penalty.
         assert!(
@@ -380,26 +284,17 @@ mod tests {
     #[test]
     fn cpu_thermal_zen5_no_chronic_pain() {
         let mut state = MiningRewardState::new();
+        let specs = HomeostasisSpecs::default();
         let t = telem(0.012, 340.0, 72.0, 2640.0);
         // Zen 5 at 80°C — normal all-core boost.  Should NOT trigger penalty.
         for _ in 0..20 {
-            state.compute(&t, Some(80.0));
+            state.compute(&t, &specs, Some(80.0));
         }
-        let r = state.compute(&t, Some(80.0));
+        let r = state.compute(&t, &specs, Some(80.0));
         assert!(
             r > 0.0,
             "Zen 5 at 80°C should not drag reward negative, got {r}"
         );
-    }
-
-    #[test]
-    fn q8_8_conversion_roundtrip() {
-        assert_eq!(reward_to_q8_8(0.0), 0);
-        assert_eq!(reward_to_q8_8(1.0), 256);
-        assert_eq!(reward_to_q8_8(0.5), 128);
-        // Overflow protection.
-        assert_eq!(reward_to_q8_8(1.5), 256); // clamped to 1.0
-        assert_eq!(reward_to_q8_8(-0.5), 0);  // clamped to 0.0
     }
 
     #[test]
@@ -420,9 +315,10 @@ mod tests {
     #[test]
     fn reward_clamp_prevents_saturation() {
         let mut state = MiningRewardState::new();
+        let specs = HomeostasisSpecs::default();
         let perfect = telem(0.015, 300.0, 65.0, 2700.0);
         for _ in 0..500 {
-            state.compute(&perfect, Some(60.0));
+            state.compute(&perfect, &specs, Some(60.0));
         }
         assert!(
             state.ema_reward <= REWARD_CLAMP,
@@ -434,5 +330,48 @@ mod tests {
             "EMA should never go below -clamp: {}",
             state.ema_reward
         );
+    }
+
+    #[test]
+    fn kaspa_high_hashrate_normalization() {
+        let mut state = MiningRewardState::new();
+        let specs = HomeostasisSpecs::for_asset(CryptoAsset::Kaspa);
+        // 1 GH/s is the target.
+        let t = MockTelem {
+            hashrate_mh: 1000.0, // 1 GH/s
+            power_w: 400.0,
+            gpu_temp_c: 70.0,
+            gpu_clock_mhz: 2640.0,
+        };
+        // Warm up EMA.
+        for _ in 0..50 {
+            state.compute(&t, &specs, Some(65.0));
+        }
+        let r = state.compute(&t, &specs, Some(65.0));
+        assert!(r > 0.5, "Kaspa at target should have high positive reward, got {r}");
+
+        // Half the target.
+        let t_half = MockTelem { hashrate_mh: 500.0, ..t };
+        let r_half = state.compute(&t_half, &specs, Some(65.0));
+        assert!(r_half < r, "Lower hashrate on Kaspa should lower reward: {r_half} < {r}");
+    }
+
+    #[test]
+    fn monero_low_hashrate_normalization() {
+        let mut state = MiningRewardState::new();
+        let specs = HomeostasisSpecs::for_asset(CryptoAsset::Monero);
+        // 20 kH/s is the target.
+        let t = MockTelem {
+            hashrate_mh: 0.02, // 20 kH/s
+            power_w: 100.0,
+            gpu_temp_c: 60.0,
+            gpu_clock_mhz: 2640.0,
+        };
+        // Warm up EMA.
+        for _ in 0..50 {
+            state.compute(&t, &specs, Some(50.0));
+        }
+        let r = state.compute(&t, &specs, Some(50.0));
+        assert!(r > 0.5, "Monero at target should have high positive reward, got {r}");
     }
 }

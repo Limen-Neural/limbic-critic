@@ -1,7 +1,7 @@
 [package]
 name = "spikenaut-reward"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 license = "GPL-3.0-or-later"
 description = "Homeostatic reward computation for cyber-physical systems: EMA-smoothed mining efficiency dopamine, 7-system neuromodulators, thermal pain receptors, and Q8.8 FPGA export"
 repository = "https://github.com/rmems/spikenaut-reward"

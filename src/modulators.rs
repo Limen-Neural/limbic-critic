@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use crate::telemetry::{PoolEvent, GpuTelemetry};
+use crate::telemetry::PoolEvent;
+use crate::{RewardableState, HomeostasisSpecs};
 
 // ── Decay constants (per tick, called once per second) ──────────────────────
 /// Mining dopamine decays slower than event dopamine because mining state
@@ -45,30 +46,29 @@ pub struct NeuroModulators {
 
 impl NeuroModulators {
     /// Decode telemetry into chemical signals
-    pub fn from_telemetry(telem: &GpuTelemetry) -> Self {
+    pub fn from_telemetry(telem: &impl RewardableState, specs: &HomeostasisSpecs) -> Self {
         // DOPAMINE: Proportional to hashrate (Reward for doing work)
-        // Target: 0.0105 MH/s = 1.0 Dopamine (calibrated to actual RTX 5080 Dynex hashrate).
-        // Software fallback baseline: 0.3 (raised from 0.2 to keep SNN active in
-        // software-only mode — prevents zero-activity during GPU-less fallback).
-        let dopamine = (telem.hashrate_mh / 0.0105).clamp(0.3, 1.0);
+        // Calibrated to 70% of peak hashrate defined in specs.
+        let target_midpoint = specs.target_hashrate_mh * 0.7;
+        let dopamine = (telem.hashrate_mh() / target_midpoint.max(1e-6)).clamp(0.3, 1.0);
 
         // CORTISOL: Stress from heat or power spikes
         // GPU temp comes from NVML — reliable on RTX 5080.
         // Onset at 83°C (just below thermal throttle), full stress at 93°C.
         // Guard: only activate when gpu_temp_c > 1.0 (zero means sensor absent).
-        let heat_stress: f32 = if telem.gpu_temp_c > 1.0 {
-            ((telem.gpu_temp_c - 83.0) / 10.0).clamp(0.0, 1.0)
+        let heat_stress: f32 = if telem.gpu_temp_c() > 1.0 {
+            ((telem.gpu_temp_c() - 83.0) / 10.0).clamp(0.0, 1.0)
         } else {
             0.0 // Sensor absent — don't inject phantom stress
         };
         // RTX 5080 TDP ~430W. Stress starts at 400W (true thermal/power runaway territory).
         // Old value of 200W caused cortisol=1.0 at normal 250W load, zeroing all stimulus.
-        let power_stress = ((telem.power_w - 400.0) / 50.0).clamp(0.0, 1.0);
+        let power_stress = ((telem.power_w() - 400.0) / 50.0).clamp(0.0, 1.0);
         // INTEL COOLANT: High-confidence Ocean Predictoor signal reduces cortisol.
         // A prediction near 0 or 1 (confident) adds a calming signal (max 30%).
         // Suppressed when ocean_intel == 0.0 (no-data sentinel).
-        let intel_coolant = if telem.ocean_intel > 0.01 {
-            (telem.ocean_intel - 0.5).abs() * 2.0 * 0.3
+        let intel_coolant = if telem.ocean_intel() > 0.01 {
+            (telem.ocean_intel() - 0.5).abs() * 2.0 * 0.3
         } else {
             0.0
         };
@@ -78,13 +78,13 @@ impl NeuroModulators {
         // Since 12V sensors don't exist, we track the stability of VDDCR_GFX.
         // Fluctuations in core voltage under load represent neural "focus" jitter.
         // Lower sensitivity to Vcore sags to maintain focus in software-only mode.
-        let vddcr_dev = (telem.vddcr_gfx_v - 1.0).abs(); // Deviation from nominal 1.0V load
+        let vddcr_dev = (telem.vddcr_gfx_v() - 1.0).abs(); // Deviation from nominal 1.0V load
         let acetylcholine = (1.0 - vddcr_dev * 2.0).clamp(0.4, 1.0);
 
         // TEMPO: Clock-driven temporal scaling
         // Nominal RTX 5080 Core Clock: 2640 MHz
         // Baseline 0.5 in software-only mode to keep pulses steady.
-        let tempo = (telem.gpu_clock_mhz / 2640.0).clamp(0.5, 2.0);
+        let tempo = (telem.gpu_clock_mhz() / 2640.0).clamp(0.5, 2.0);
 
         Self {
             dopamine,
@@ -142,36 +142,53 @@ impl NeuroModulators {
 mod tests {
     use super::*;
 
-    fn make_telem(gpu_temp_c: f32, power_w: f32, hashrate_mh: f32) -> GpuTelemetry {
-        GpuTelemetry {
+    struct MockTelem {
+        gpu_temp_c: f32,
+        power_w: f32,
+        hashrate_mh: f32,
+        gpu_clock_mhz: f32,
+    }
+
+    impl RewardableState for MockTelem {
+        fn hashrate_mh(&self) -> f32 { self.hashrate_mh }
+        fn power_w(&self) -> f32 { self.power_w }
+        fn gpu_temp_c(&self) -> f32 { self.gpu_temp_c }
+        fn gpu_clock_mhz(&self) -> f32 { self.gpu_clock_mhz }
+        fn vddcr_gfx_v(&self) -> f32 { 1.0 }
+        fn ocean_intel(&self) -> f32 { 0.0 }
+    }
+
+    fn make_telem(gpu_temp_c: f32, power_w: f32, hashrate_mh: f32) -> MockTelem {
+        MockTelem {
             gpu_temp_c,
             power_w,
             hashrate_mh,
-            vddcr_gfx_v: 1.0,
             gpu_clock_mhz: 2640.0,
-            ..Default::default()
         }
     }
 
     #[test]
     fn heat_stress_activates_above_threshold() {
+        let specs = HomeostasisSpecs::default();
         // At 90°C (above 83°C onset), heat_stress should be non-zero.
-        let m = NeuroModulators::from_telemetry(&make_telem(90.0, 300.0, 0.01));
+        let m = NeuroModulators::from_telemetry(&make_telem(90.0, 300.0, 0.01), &specs);
         assert!(m.cortisol > 0.0, "90°C should produce cortisol, got {}", m.cortisol);
     }
 
     #[test]
     fn heat_stress_zero_at_normal_temps() {
+        let specs = HomeostasisSpecs::default();
         // At 72°C (well below 83°C onset), heat_stress should be zero.
-        let m = NeuroModulators::from_telemetry(&make_telem(72.0, 300.0, 0.01));
+        let m = NeuroModulators::from_telemetry(&make_telem(72.0, 300.0, 0.01), &specs);
         // Only power_stress matters here, and 300W < 400W onset, so cortisol = 0.
         assert!(m.cortisol < 0.01, "72°C / 300W should produce near-zero cortisol, got {}", m.cortisol);
     }
 
     #[test]
     fn heat_stress_zero_when_sensor_absent() {
+        let specs = HomeostasisSpecs::default();
         // gpu_temp_c = 0.0 means sensor absent — no phantom stress.
-        let m = NeuroModulators::from_telemetry(&make_telem(0.0, 300.0, 0.01));
+        let m = NeuroModulators::from_telemetry(&make_telem(0.0, 300.0, 0.01), &specs);
         assert!(m.cortisol < 0.01, "absent sensor should not inject stress, got {}", m.cortisol);
     }
 
