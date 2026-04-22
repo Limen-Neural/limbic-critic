@@ -2,8 +2,6 @@
 
 pub mod critic;
 pub mod environment;
-pub mod modulators;
 
 pub use critic::{SimpleCritic, TDCritic};
 pub use environment::Environment;
-pub use modulators::NeuroModulators;
