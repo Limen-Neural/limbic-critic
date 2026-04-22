@@ -4,7 +4,7 @@
 //! observations into neuromodulatory signals.
 
 use crate::environment::Environment;
-use crate::modulators::NeuroModulators;
+use neuromod::NeuroModulators;
 
 /// A simple critic that calculates reward based on the immediate
 /// objective value.
@@ -23,15 +23,14 @@ impl SimpleCritic {
             0.0
         };
 
-        // Map volatility to serotonin and stress to cortisol
-        let serotonin = (1.0 - env.volatility()).clamp(0.0, 1.0);
         let cortisol = env.stress().clamp(0.0, 1.0);
 
         NeuroModulators {
             dopamine,
-            serotonin,
             cortisol,
             acetylcholine: 0.5, // Placeholder value
+            tempo: 1.0,
+            mining_dopamine: 0.0,
         }
     }
 }
@@ -58,20 +57,23 @@ impl TDCritic {
         let td_error = objective - self.prev_objective;
         self.prev_objective = objective;
 
+        // Surprise / Focus calculation
+        let acetylcholine = td_error.abs().tanh().clamp(0.0, 1.0);
+
         // Update the EMA of the reward
         self.ema_reward = (1.0 - self.alpha) * self.ema_reward + self.alpha * td_error;
 
         // Map the smoothed reward to dopamine
         let dopamine = (self.ema_reward.tanh()).clamp(-1.0, 1.0);
 
-        let serotonin = (1.0 - env.volatility()).clamp(0.0, 1.0);
         let cortisol = env.stress().clamp(0.0, 1.0);
 
         NeuroModulators {
             dopamine,
-            serotonin,
             cortisol,
-            acetylcholine: 0.5, // Placeholder
+            acetylcholine,
+            tempo: 1.0,
+            mining_dopamine: 0.0,
         }
     }
 }
