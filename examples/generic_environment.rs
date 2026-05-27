@@ -37,7 +37,9 @@ impl PendulumEnv {
 impl Environment for PendulumEnv {
     fn objective(&self) -> f32 {
         // Reward: 1.0 when upright (angle=0), -1.0 when hanging (angle=PI)
-        -(self.angle / PI) * 2.0 + 1.0
+        // Using cos ensures smooth, continuous, symmetric signal around upright,
+        // avoiding discontinuities at the angle wrap boundary (2π ≡ 0).
+        self.angle.cos()
     }
 
     fn volatility(&self) -> f32 {
@@ -46,8 +48,9 @@ impl Environment for PendulumEnv {
     }
 
     fn stress(&self) -> f32 {
-        // Stress proportional to absolute angle from upright
-        (self.angle / PI).min(1.0)
+        // Stress proportional to absolute angle from upright.
+        // cos = 1 at upright (0 stress), cos = -1 at hanging (max stress).
+        (1.0 - self.angle.cos()) * 0.5
     }
 }
 

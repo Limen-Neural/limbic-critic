@@ -163,15 +163,9 @@ mod tests {
         let mut td = TDCritic::new(0.1);
         let mut env = VolatileEnv::new(vec![0.0, 1.0]);
 
-        let first = td.assess(&VolatileEnv {
-            steps: vec![0.0],
-            index: 0,
-        });
+        let first = td.assess(&env);
         env.index = 1;
-        let second = td.assess(&VolatileEnv {
-            steps: vec![1.0],
-            index: 0,
-        });
+        let second = td.assess(&env);
 
         // Second call has positive improvement
         assert!(second.dopamine > first.dopamine);
@@ -182,15 +176,9 @@ mod tests {
         let mut td = TDCritic::new(0.1);
         let mut env = VolatileEnv::new(vec![1.0, 0.0]);
 
-        let first = td.assess(&VolatileEnv {
-            steps: vec![1.0],
-            index: 0,
-        });
+        let first = td.assess(&env);
         env.index = 1;
-        let second = td.assess(&VolatileEnv {
-            steps: vec![0.0],
-            index: 0,
-        });
+        let second = td.assess(&env);
 
         // Second call has negative td_error
         assert!(second.dopamine < first.dopamine);
