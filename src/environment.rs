@@ -37,3 +37,62 @@ pub trait Environment {
         0.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestEnv {
+        value: f32,
+        vol: f32,
+        stress_val: f32,
+    }
+
+    impl Environment for TestEnv {
+        fn objective(&self) -> f32 {
+            self.value
+        }
+        fn volatility(&self) -> f32 {
+            self.vol
+        }
+        fn stress(&self) -> f32 {
+            self.stress_val
+        }
+    }
+
+    #[test]
+    fn test_environment_defaults() {
+        struct MinimalEnv;
+        impl Environment for MinimalEnv {
+            fn objective(&self) -> f32 {
+                42.0
+            }
+        }
+        let env = MinimalEnv;
+        assert_eq!(env.objective(), 42.0);
+        assert_eq!(env.volatility(), 0.0);
+        assert_eq!(env.stress(), 0.0);
+    }
+
+    #[test]
+    fn test_environment_with_values() {
+        let env = TestEnv {
+            value: 0.5,
+            vol: 0.3,
+            stress_val: 0.8,
+        };
+        assert_eq!(env.objective(), 0.5);
+        assert_eq!(env.volatility(), 0.3);
+        assert_eq!(env.stress(), 0.8);
+    }
+
+    #[test]
+    fn test_environment_trait_object() {
+        let env: Box<dyn Environment> = Box::new(TestEnv {
+            value: -1.0,
+            vol: 0.0,
+            stress_val: 0.0,
+        });
+        assert_eq!(env.objective(), -1.0);
+    }
+}

@@ -28,9 +28,9 @@ impl SimpleCritic {
         NeuroModulators {
             dopamine,
             cortisol,
-            acetylcholine: 0.5, // Placeholder value
+            acetylcholine: 0.5,
             tempo: 1.0,
-            mining_dopamine: 0.0,
+            aux_dopamine: 0.0,
         }
     }
 }
@@ -73,7 +73,124 @@ impl TDCritic {
             cortisol,
             acetylcholine,
             tempo: 1.0,
-            mining_dopamine: 0.0,
+            aux_dopamine: 0.0,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct ConstEnv(f32);
+
+    impl Environment for ConstEnv {
+        fn objective(&self) -> f32 {
+            self.0
+        }
+    }
+
+    struct VolatileEnv {
+        steps: Vec<f32>,
+        index: usize,
+    }
+
+    impl VolatileEnv {
+        fn new(values: Vec<f32>) -> Self {
+            Self {
+                steps: values,
+                index: 0,
+            }
+        }
+    }
+
+    impl Environment for VolatileEnv {
+        fn objective(&self) -> f32 {
+            self.steps[self.index]
+        }
+    }
+
+    #[test]
+    fn test_simple_critic_positive_objective() {
+        let env = ConstEnv(0.8);
+        let mods = SimpleCritic::assess(&env);
+        assert_eq!(mods.dopamine, 0.8);
+        assert_eq!(mods.cortisol, 0.0);
+    }
+
+    #[test]
+    fn test_simple_critic_negative_objective() {
+        let env = ConstEnv(-0.5);
+        let mods = SimpleCritic::assess(&env);
+        assert_eq!(mods.dopamine, 0.0);
+    }
+
+    #[test]
+    fn test_simple_critic_clamping() {
+        let env = ConstEnv(5.0);
+        let mods = SimpleCritic::assess(&env);
+        assert_eq!(mods.dopamine, 1.0);
+    }
+
+    #[test]
+    fn test_simple_critic_stress() {
+        struct StressedEnv;
+        impl Environment for StressedEnv {
+            fn objective(&self) -> f32 {
+                0.5
+            }
+            fn stress(&self) -> f32 {
+                0.9
+            }
+        }
+        let mods = SimpleCritic::assess(&StressedEnv);
+        assert_eq!(mods.cortisol, 0.9);
+    }
+
+    #[test]
+    fn test_td_critic_no_change() {
+        let env = ConstEnv(0.5);
+        let mut td = TDCritic::new(0.1);
+        let mods = td.assess(&env);
+        // First call: td_error = 0.5 - 0.0 = 0.5
+        // ema starts at 0.0, so ema = 0.9*0.0 + 0.1*0.5 = 0.05
+        // dopamine = 0.05.tanh()
+        assert!((mods.dopamine - 0.05f32.tanh()).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_td_critic_improvement() {
+        let mut td = TDCritic::new(0.1);
+        let mut env = VolatileEnv::new(vec![0.0, 1.0]);
+
+        let first = td.assess(&env);
+        env.index = 1;
+        let second = td.assess(&env);
+
+        // Second call has positive improvement
+        assert!(second.dopamine > first.dopamine);
+    }
+
+    #[test]
+    fn test_td_critic_degradation() {
+        let mut td = TDCritic::new(0.1);
+        let mut env = VolatileEnv::new(vec![1.0, 0.0]);
+
+        let first = td.assess(&env);
+        env.index = 1;
+        let second = td.assess(&env);
+
+        // Second call has negative td_error
+        assert!(second.dopamine < first.dopamine);
+    }
+
+    #[test]
+    fn test_td_critic_surprise() {
+        let mut td = TDCritic::new(0.1);
+        let env = ConstEnv(0.5);
+
+        let mods = td.assess(&env);
+        // First td_error = 0.5, acetylcholine = 0.5.abs().tanh()
+        assert!((mods.acetylcholine - 0.5f32.tanh()).abs() < 1e-6);
     }
 }
