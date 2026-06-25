@@ -10,6 +10,10 @@ repository = "https://github.com/Limen-Neural/limbic-critic"
 neuromod = { git = "https://github.com/Limen-Neural/neuromod", rev = "b3de76a4472dea897cb017302ebd79899a8e2177" }
 serde = { version = "1.0", features = ["derive"] }
 
+[[example]]
+name = "generic_environment"
+path = "examples/generic_environment.rs"
+
 [profile.release]
 opt-level = 3
 lto = true
