@@ -26,10 +26,11 @@ impl SimpleCritic {
         };
 
         let stress = env.stress().clamp(0.0, 1.0);
+        let serotonin = env.volatility().clamp(0.0, 1.0);
 
         NeuroModulators {
             dopamine,
-            serotonin: 0.0,
+            serotonin,
             acetylcholine: 0.5, // Placeholder value
             norepinephrine: stress,
         }
@@ -68,10 +69,11 @@ impl TDCritic {
         let dopamine = (self.ema_reward.tanh()).clamp(-1.0, 1.0);
 
         let stress = env.stress().clamp(0.0, 1.0);
+        let serotonin = env.volatility().clamp(0.0, 1.0);
 
         NeuroModulators {
             dopamine,
-            serotonin: 0.0,
+            serotonin,
             acetylcholine,
             norepinephrine: stress,
         }
