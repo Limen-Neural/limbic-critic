@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! RL Critic and Reward Shaping
 //!
 //! This module contains the core logic for translating environmental
@@ -23,14 +25,13 @@ impl SimpleCritic {
             0.0
         };
 
-        let cortisol = env.stress().clamp(0.0, 1.0);
+        let stress = env.stress().clamp(0.0, 1.0);
 
         NeuroModulators {
             dopamine,
-            cortisol,
+            serotonin: 0.0,
             acetylcholine: 0.5, // Placeholder value
-            tempo: 1.0,
-            aux_dopamine: 0.0,
+            norepinephrine: stress,
         }
     }
 }
@@ -66,14 +67,13 @@ impl TDCritic {
         // Map the smoothed reward to dopamine
         let dopamine = (self.ema_reward.tanh()).clamp(-1.0, 1.0);
 
-        let cortisol = env.stress().clamp(0.0, 1.0);
+        let stress = env.stress().clamp(0.0, 1.0);
 
         NeuroModulators {
             dopamine,
-            cortisol,
+            serotonin: 0.0,
             acetylcholine,
-            tempo: 1.0,
-            aux_dopamine: 0.0,
+            norepinephrine: stress,
         }
     }
 }

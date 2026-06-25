@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! Environment Trait
 //!
 //! Defines the interface for any external system that the `limbic-critic`

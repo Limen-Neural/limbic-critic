@@ -11,30 +11,24 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
         with:
+          toolchain: stable
           components: clippy, rustfmt
 
       - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Check formatting
         run: cargo fmt --check
 
       - name: Clippy (lint)
         run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: Build
-        run: cargo build --all-features
 
       - name: Test
         run: cargo test --all-features

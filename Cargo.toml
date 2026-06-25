@@ -3,10 +3,11 @@ name = "limbic-critic"
 version = "0.2.0"
 edition = "2024"
 description = "Neuromodulatory reward shaping and RL critic functions for SNNs."
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/Limen-Neural/limbic-critic"
 
 [dependencies]
-neuromod = { git = "https://github.com/Limen-Neural/neuromod" }
+neuromod = { git = "https://github.com/Limen-Neural/neuromod", rev = "b3de76a4472dea897cb017302ebd79899a8e2177" }
 serde = { version = "1.0", features = ["derive"] }
 
 [profile.release]
