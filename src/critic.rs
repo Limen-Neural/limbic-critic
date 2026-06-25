@@ -30,7 +30,7 @@ impl SimpleCritic {
             cortisol,
             acetylcholine: 0.5, // Placeholder value
             tempo: 1.0,
-            mining_dopamine: 0.0,
+            aux_dopamine: 0.0,
         }
     }
 }
@@ -73,7 +73,7 @@ impl TDCritic {
             cortisol,
             acetylcholine,
             tempo: 1.0,
-            mining_dopamine: 0.0,
+            aux_dopamine: 0.0,
         }
     }
 }
