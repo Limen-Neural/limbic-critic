@@ -31,7 +31,7 @@ pub trait Environment {
 
     /// Returns a scalar value representing system stress or instability.
     ///
-    /// This is optional and can be used to modulate cortisol levels.
+    /// This is optional and can be used to modulate norepinephrine levels.
     /// For a hardware system, this might be temperature or power draw.
     /// For a software system, it could be error rates or latency.
     /// Defaults to 0.0 if not implemented.
