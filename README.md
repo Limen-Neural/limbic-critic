@@ -1,6 +1,7 @@
 # limbic-critic
 
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+[![codecov](https://codecov.io/gh/Limen-Neural/limbic-critic/branch/main/graph/badge.svg)](https://codecov.io/gh/Limen-Neural/limbic-critic)
 
 Neuromodulatory reward shaping and RL critic functions for SNNs.
 
@@ -17,6 +18,24 @@ Its sole purpose is to compute the scalar values that feed into `neuromod::rm_st
 * **Environment Trait**: Abstract interface via the `Environment` trait. The crate is agnostic to whether it's evaluating a simulation score, a trading bot's PnL, an LLM's cross-entropy loss, or any other performance indicator.
 * **Reward Functions**: Standard RL reward shaping functions — Temporal Difference error, curiosity-driven intrinsic reward, moving-average baselines.
 * **Modulator Mapping**: Maps mathematical errors into constrained `f32` vectors representing Dopamine (reward), Serotonin (risk/volatility), and Norepinephrine (stress/telemetry).
+
+## Development
+
+```bash
+cargo check
+cargo test
+cargo clippy --all-targets --all-features -- -D warnings
+cargo fmt --check
+
+# Coverage (matches CI)
+cargo install cargo-llvm-cov
+cargo llvm-cov --all-features --lcov --output-path lcov.info
+# HTML report: cargo llvm-cov --all-features --html
+```
+
+## Coverage
+
+[![codecov](https://codecov.io/gh/Limen-Neural/limbic-critic/branch/main/graph/badge.svg)](https://codecov.io/gh/Limen-Neural/limbic-critic)
 
 ## License
 

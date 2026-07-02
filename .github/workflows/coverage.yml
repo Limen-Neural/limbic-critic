@@ -1,0 +1,64 @@
+# Codecov coverage workflow (separate from main CI per observability split).
+# Third-party Actions are pinned to immutable commit SHAs (Aikido supply-chain policy).
+name: Codecov
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  codecov:
+    name: Codecov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          components: clippy, rustfmt, llvm-tools-preview
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@16b05812d776ae1dfaabc8277e421fb6d2506419 # pinned (taiki-e/install-action v2)
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Generate coverage (lcov)
+        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+
+      # Generate JUnit XML via nextest ci profile (.config/nextest.toml).
+      - name: Install nextest
+        uses: taiki-e/install-action@16b05812d776ae1dfaabc8277e421fb6d2506419 # pinned (taiki-e/install-action v2)
+        with:
+          tool: nextest
+          version: '0.9.70'
+
+      # JUnit output via nextest profile (see .config/nextest.toml).
+      - name: Run tests (JUnit)
+        run: |
+          cargo nextest run --all-features --profile ci
+          cp target/nextest/ci/junit.xml junit.xml
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Codecov
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: lcov.info
+          slug: Limen-Neural/limbic-critic
+          fail_ci_if_error: false
+          verbose: true
