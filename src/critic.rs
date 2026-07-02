@@ -151,8 +151,8 @@ mod tests {
 
     #[test]
     fn test_simple_critic_volatility_serotonin() {
-        struct VolatileEnv;
-        impl Environment for VolatileEnv {
+        struct SimpleVolatileEnv;
+        impl Environment for SimpleVolatileEnv {
             fn objective(&self) -> f32 {
                 0.5
             }
@@ -160,7 +160,7 @@ mod tests {
                 0.6
             }
         }
-        let mods = SimpleCritic::assess(&VolatileEnv);
+        let mods = SimpleCritic::assess(&SimpleVolatileEnv);
         assert_eq!(mods.serotonin, 0.6);
     }
 
@@ -213,10 +213,10 @@ mod tests {
 
     #[test]
     fn test_td_critic_volatility_serotonin() {
-        struct VolatileEnv {
+        struct TdVolatileEnv {
             v: f32,
         }
-        impl Environment for VolatileEnv {
+        impl Environment for TdVolatileEnv {
             fn objective(&self) -> f32 {
                 0.0
             }
@@ -225,7 +225,7 @@ mod tests {
             }
         }
         let mut td = TDCritic::new(0.1);
-        let env = VolatileEnv { v: 0.6 };
+        let env = TdVolatileEnv { v: 0.6 };
         let mods = td.assess(&env);
         assert_eq!(mods.serotonin, 0.6);
     }

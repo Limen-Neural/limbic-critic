@@ -12,6 +12,8 @@ jobs:
   codecov:
     name: Codecov
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -30,21 +32,14 @@ jobs:
         with:
           tool: cargo-llvm-cov
 
-      - name: Generate coverage (lcov)
-        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
-
-      # Generate JUnit XML via nextest ci profile (.config/nextest.toml).
       - name: Install nextest
         uses: taiki-e/install-action@16b05812d776ae1dfaabc8277e421fb6d2506419 # pinned (taiki-e/install-action v2)
         with:
           tool: nextest
           version: '0.9.70'
 
-      # JUnit output via nextest profile (see .config/nextest.toml).
-      - name: Run tests (JUnit)
-        run: |
-          cargo nextest run --all-features --profile ci
-          cp target/nextest/ci/junit.xml junit.xml
+      - name: Generate coverage (lcov) + JUnit (single nextest pass via llvm-cov integration)
+        run: cargo llvm-cov nextest --all-features --profile ci --lcov --output-path lcov.info
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
