@@ -1,7 +1,6 @@
 # limbic-critic
 
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
-[![codecov](https://codecov.io/gh/Limen-Neural/limbic-critic/branch/main/graph/badge.svg)](https://codecov.io/gh/Limen-Neural/limbic-critic)
 
 Neuromodulatory reward shaping and RL critic functions for SNNs.
 
