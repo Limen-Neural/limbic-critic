@@ -5,9 +5,11 @@ Cargo.lock
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
+.beads-credential-key
+
+# CI / test log artifacts (GH-16 / lc-r97.1) - generated in root by CI runs
 *.log
 test_output.txt
-.beads-credential-key
 
 # Coverage artifacts (GH-27 / lc-r97.5)
 lcov.info
