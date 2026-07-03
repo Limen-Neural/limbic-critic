@@ -37,7 +37,7 @@ These development commands, hygiene improvements, test assertions, MSRV declarat
 - [GH-16](https://github.com/Limen-Neural/limbic-critic/issues/16): Remove tracked CI log artifacts
 - [GH-17](https://github.com/Limen-Neural/limbic-critic/issues/17): Remove unused serde dependency
 - [GH-18](https://github.com/Limen-Neural/limbic-critic/issues/18): Add serotonin/volatility assertions for critic assess()
-- [GH-24](https://github.com/Limen-Neural/limbic-critic/issues/24): Add rust-version MSRV to Cargo.toml
+* [GH-24](https://github.com/Limen-Neural/limbic-critic/issues/24): Add rust-version MSRV to Cargo.toml
 * [GH-27](https://github.com/Limen-Neural/limbic-critic/issues/27): Add Codecov coverage reporting (cargo-llvm-cov + badge)
 
 ## Coverage
