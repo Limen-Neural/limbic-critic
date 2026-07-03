@@ -23,10 +23,10 @@ jobs:
         with:
           persist-credentials: false
 
-      # Pinned to full commit SHA for dtolnay/rust-toolchain (corresponds to v1 tag)
+      # Pinned to full commit SHA for dtolnay/rust-toolchain (corresponds to v1 tag, aligned with coverage.yml for consistency)
       # This ensures immutable build behavior and satisfies security scanners.
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           toolchain: stable
           components: clippy, rustfmt
