@@ -18,6 +18,32 @@ Its sole purpose is to compute the scalar values that feed into `neuromod::rm_st
 * **Reward Functions**: Standard RL reward shaping functions — Temporal Difference error, curiosity-driven intrinsic reward, moving-average baselines.
 * **Modulator Mapping**: Maps mathematical errors into constrained `f32` vectors representing Dopamine (reward), Serotonin (risk/volatility), and Norepinephrine (stress/telemetry).
 
+## Development
+
+```bash
+cargo check
+cargo test
+cargo clippy --all-targets --all-features -- -D warnings
+cargo fmt --check
+
+# Coverage (matches CI)
+cargo install cargo-llvm-cov
+cargo llvm-cov --all-features --lcov --output-path lcov.info
+# HTML report: cargo llvm-cov --all-features --html
+```
+
+These development commands, hygiene improvements, test assertions, MSRV declaration, artifact cleanup, and Codecov integration were contributed by the following GitHub issues (bundled as beads lc-r97 / PR #28):
+
+* [GH-16](https://github.com/Limen-Neural/limbic-critic/issues/16): Remove tracked CI log artifacts
+* [GH-17](https://github.com/Limen-Neural/limbic-critic/issues/17): Remove unused serde dependency
+* [GH-18](https://github.com/Limen-Neural/limbic-critic/issues/18): Add serotonin/volatility assertions for critic assess()
+* [GH-24](https://github.com/Limen-Neural/limbic-critic/issues/24): Add rust-version MSRV to Cargo.toml
+* [GH-27](https://github.com/Limen-Neural/limbic-critic/issues/27): Add Codecov coverage reporting (cargo-llvm-cov + badge)
+
+## Coverage
+
+[![codecov](https://codecov.io/gh/Limen-Neural/limbic-critic/branch/main/graph/badge.svg)](https://codecov.io/gh/Limen-Neural/limbic-critic)
+
 ## License
 
 Licensed under either of

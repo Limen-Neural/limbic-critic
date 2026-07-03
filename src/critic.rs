@@ -150,6 +150,21 @@ mod tests {
     }
 
     #[test]
+    fn test_simple_critic_volatility_serotonin() {
+        struct SimpleVolatileEnv;
+        impl Environment for SimpleVolatileEnv {
+            fn objective(&self) -> f32 {
+                0.5
+            }
+            fn volatility(&self) -> f32 {
+                0.6
+            }
+        }
+        let mods = SimpleCritic::assess(&SimpleVolatileEnv);
+        assert_eq!(mods.serotonin, 0.6);
+    }
+
+    #[test]
     fn test_td_critic_no_change() {
         let env = ConstEnv(0.5);
         let mut td = TDCritic::new(0.1);
@@ -194,5 +209,24 @@ mod tests {
         let mods = td.assess(&env);
         // First td_error = 0.5, acetylcholine = 0.5.abs().tanh()
         assert!((mods.acetylcholine - 0.5f32.tanh()).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_td_critic_volatility_serotonin() {
+        struct TdVolatileEnv {
+            v: f32,
+        }
+        impl Environment for TdVolatileEnv {
+            fn objective(&self) -> f32 {
+                0.0
+            }
+            fn volatility(&self) -> f32 {
+                self.v
+            }
+        }
+        let mut td = TDCritic::new(0.1);
+        let env = TdVolatileEnv { v: 0.6 };
+        let mods = td.assess(&env);
+        assert_eq!(mods.serotonin, 0.6);
     }
 }

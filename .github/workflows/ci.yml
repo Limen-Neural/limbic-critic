@@ -13,15 +13,20 @@ jobs:
     permissions:
       contents: read
     steps:
-      # Pinned to full commit SHA for supply-chain security (actions/checkout@v4)
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      # Pinned to full commit SHA for supply-chain security.
+      # Upgraded from v4 SHA (34e11...) to v7 SHA (9c09...) for consistency with coverage.yml
+      # (see coverage workflow). This is a security-pinned immutable SHA corresponding to
+      # actions/checkout@v7. No submodules, LFS, or custom fetch-depth used in this workflow,
+      # so no breaking changes from v5/v6/v7 affect it. Verified against GitHub's official
+      # actions/checkout releases.
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
 
-      # Pinned to full commit SHA for dtolnay/rust-toolchain (corresponds to v1 tag)
+      # Pinned to full commit SHA for dtolnay/rust-toolchain (corresponds to v1 tag, aligned with coverage.yml for consistency)
       # This ensures immutable build behavior and satisfies security scanners.
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           toolchain: stable
           components: clippy, rustfmt
