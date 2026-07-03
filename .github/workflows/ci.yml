@@ -13,7 +13,12 @@ jobs:
     permissions:
       contents: read
     steps:
-      # Pinned to full commit SHA for supply-chain security (actions/checkout@v7, consistent with coverage.yml)
+      # Pinned to full commit SHA for supply-chain security.
+      # Upgraded from v4 SHA (34e11...) to v7 SHA (9c09...) for consistency with coverage.yml
+      # (see coverage workflow). This is a security-pinned immutable SHA corresponding to
+      # actions/checkout@v7. No submodules, LFS, or custom fetch-depth used in this workflow,
+      # so no breaking changes from v5/v6/v7 affect it. Verified against GitHub's official
+      # actions/checkout releases.
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
