@@ -4,7 +4,7 @@
 
 ## Purpose
 
-`limbic-critic` provides reward shaping and credit assignment mechanisms for SNN (Spiking Neural Network) training. It translates external objective signals from any environment into biological neuromodulator concentrations (dopamine, cortisol, acetylcholine, etc.) as a local `ModulatorVector` type.
+`limbic-critic` provides reward shaping and credit assignment mechanisms for SNN (Spiking Neural Network) training. It translates external objective signals from any environment into biological neuromodulator concentrations (dopamine, serotonin, acetylcholine, norepinephrine) as a local `ModulatorVector` type.
 
 It is a **pure computation library** with no I/O, no hardware access, and no application-specific environment implementations.
 
