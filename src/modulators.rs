@@ -5,6 +5,12 @@
 //! Defines the structure for neuromodulatory signals.
 
 /// A vector of neuromodulator concentrations.
+///
+/// This is a local type decoupled from the `neuromod` crate to avoid
+/// git-dependency coupling in core libraries. If `neuromod` adds fields
+/// or changes semantics, this struct won't track those changes
+/// automatically. Downstream consumers using both `limbic-critic` and
+/// `neuromod` should maintain a manual conversion layer.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct ModulatorVector {
     /// Dopamine level (typically reward/error).

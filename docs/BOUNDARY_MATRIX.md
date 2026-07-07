@@ -4,7 +4,7 @@
 
 ## Purpose
 
-`limbic-critic` provides reward shaping and credit assignment mechanisms for SNN (Spiking Neural Network) training. It translates external objective signals from any environment into biological neuromodulator concentrations (dopamine, cortisol, acetylcholine, etc.) for use by `neuromod::rm_stdp`.
+`limbic-critic` provides reward shaping and credit assignment mechanisms for SNN (Spiking Neural Network) training. It translates external objective signals from any environment into biological neuromodulator concentrations (dopamine, cortisol, acetylcholine, etc.) as a local `ModulatorVector` type.
 
 It is a **pure computation library** with no I/O, no hardware access, and no application-specific environment implementations.
 
@@ -14,7 +14,7 @@ It is a **pure computation library** with no I/O, no hardware access, and no app
 - Credit assignment mechanisms (eligibility traces, reward propagation)
 - `Environment` abstraction trait — the interface for any measurable external system
 - Reward normalization and scaling
-- Integration with plasticity rules via `neuromod` modulator output
+- Integration with plasticity rules via local `ModulatorVector` output
 
 ## Does Not Own
 
@@ -22,11 +22,10 @@ It is a **pure computation library** with no I/O, no hardware access, and no app
 - Environment implementations (those belong in application crates or adapters)
 - I/O, networking, or hardware access
 - SNN model definitions or training loops
-- Neuromodulator dynamics or decay profiles (owned by `neuromod`)
+- Neuromodulator dynamics or decay profiles
 
 ## Allowed Dependencies
 
-- `neuromod` — for `NeuroModulators` output structure and `rm_stdp` integration
 - `serde` — optional serialization for checkpoint/debug
 - Math and statistics libraries (e.g., `nalgebra` for matrix operations)
 - `rand` — for stochastic reward shaping where needed
@@ -43,7 +42,7 @@ It is a **pure computation library** with no I/O, no hardware access, and no app
 
 | Layer | Responsibility | Example Repos |
 |-------|---------------|---------------|
-| **Core Library** | Reward shaping algorithms, trait definitions, modulator mapping | `limbic-critic`, `neuromod` |
+| **Core Library** | Reward shaping algorithms, trait definitions, modulator mapping | `limbic-critic` |
 | **Supervisor/App** | Environment implementations, training orchestration, experiment config | `brainstem-daemon` |
 | **Deployment/Hardware** | FPGA integration, sensor I/O, real-time control loops | `Spikenaut-Hardware`, `silicon-bridge` |
 
