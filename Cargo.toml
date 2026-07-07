@@ -7,8 +7,11 @@ description = "Neuromodulatory reward shaping and RL critic functions for SNNs."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Limen-Neural/limbic-critic"
 
+[lib]
+name = "limbic_critic"
+path = "src/lib.rs"
+
 [dependencies]
-neuromod = { git = "https://github.com/Limen-Neural/neuromod", rev = "b3de76a4472dea897cb017302ebd79899a8e2177" }
 
 [[example]]
 name = "generic_environment"

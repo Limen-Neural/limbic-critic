@@ -6,7 +6,7 @@
 //! observations into neuromodulatory signals.
 
 use crate::environment::Environment;
-use neuromod::NeuroModulators;
+use crate::modulators::ModulatorVector;
 
 /// A simple critic that calculates reward based on the immediate
 /// objective value.
@@ -15,7 +15,7 @@ pub struct SimpleCritic;
 impl SimpleCritic {
     /// Calculates neuromodulator concentrations based on the current
     /// state of the environment.
-    pub fn assess(env: &impl Environment) -> NeuroModulators {
+    pub fn assess(env: &impl Environment) -> ModulatorVector {
         let objective = env.objective();
 
         // Simple mapping: positive objective -> dopamine, negative -> nothing
@@ -28,7 +28,7 @@ impl SimpleCritic {
         let stress = env.stress().clamp(0.0, 1.0);
         let serotonin = env.volatility().clamp(0.0, 1.0);
 
-        NeuroModulators {
+        ModulatorVector {
             dopamine,
             serotonin,
             acetylcholine: 0.5, // Placeholder value
@@ -54,7 +54,7 @@ impl TDCritic {
     }
 
     /// Calculates neuromodulator concentrations based on the TD error.
-    pub fn assess(&mut self, env: &impl Environment) -> NeuroModulators {
+    pub fn assess(&mut self, env: &impl Environment) -> ModulatorVector {
         let objective = env.objective();
         let td_error = objective - self.prev_objective;
         self.prev_objective = objective;
@@ -71,7 +71,7 @@ impl TDCritic {
         let stress = env.stress().clamp(0.0, 1.0);
         let serotonin = env.volatility().clamp(0.0, 1.0);
 
-        NeuroModulators {
+        ModulatorVector {
             dopamine,
             serotonin,
             acetylcholine,
