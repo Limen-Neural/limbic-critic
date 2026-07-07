@@ -5,7 +5,7 @@
 //! Defines the structure for neuromodulatory signals.
 
 /// A vector of neuromodulator concentrations.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct ModulatorVector {
     /// Dopamine level (typically reward/error).
     pub dopamine: f32,
