@@ -36,8 +36,8 @@ pub trait Environment {
     /// For a game, it could be unexpected state changes or newly discovered
     /// entities. Defaults to 0.0 if not implemented.
     ///
-    /// Values outside `[0.0, 1.0]` are accepted; critics clamp them to the
-    /// valid modulator range.
+    /// Values are not required to be in `[0.0, 1.0]`; critics that consume this
+    /// signal clamp it to the valid modulator range as needed.
     fn surprise(&self) -> f32 {
         0.0
     }
