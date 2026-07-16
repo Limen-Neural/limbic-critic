@@ -29,6 +29,16 @@ pub trait Environment {
         0.0
     }
 
+    /// Returns a scalar value representing environmental surprise or novelty.
+    ///
+    /// This is optional and can be used to modulate acetylcholine levels in
+    /// stateless critics. For a trading bot, this might be anomaly score.
+    /// For a game, it could be unexpected state changes or newly discovered
+    /// entities. Defaults to 0.0 if not implemented.
+    fn surprise(&self) -> f32 {
+        0.0
+    }
+
     /// Returns a scalar value representing system stress or instability.
     ///
     /// This is optional and can be used to modulate norepinephrine levels.
@@ -73,6 +83,7 @@ mod tests {
         let env = MinimalEnv;
         assert_eq!(env.objective(), 42.0);
         assert_eq!(env.volatility(), 0.0);
+        assert_eq!(env.surprise(), 0.0);
         assert_eq!(env.stress(), 0.0);
     }
 
