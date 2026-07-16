@@ -104,17 +104,6 @@ mod tests {
         index: usize,
     }
 
-    struct SurprisingEnv(f32);
-
-    impl Environment for SurprisingEnv {
-        fn objective(&self) -> f32 {
-            0.0
-        }
-        fn surprise(&self) -> f32 {
-            self.0
-        }
-    }
-
     impl VolatileEnv {
         fn new(values: Vec<f32>) -> Self {
             Self {
@@ -184,14 +173,38 @@ mod tests {
 
     #[test]
     fn test_simple_critic_surprise_acetylcholine() {
-        let mods = SimpleCritic::assess(&SurprisingEnv(0.7));
+        struct SurprisingEnv {
+            surprise: f32,
+        }
+        impl Environment for SurprisingEnv {
+            fn objective(&self) -> f32 {
+                0.5
+            }
+            fn surprise(&self) -> f32 {
+                self.surprise
+            }
+        }
+
+        let mods = SimpleCritic::assess(&SurprisingEnv { surprise: 0.7 });
         assert_eq!(mods.acetylcholine, 0.7);
     }
 
     #[test]
     fn test_simple_critic_surprise_acetylcholine_clamping() {
-        assert_eq!(SimpleCritic::assess(&SurprisingEnv(-0.2)).acetylcholine, 0.0);
-        assert_eq!(SimpleCritic::assess(&SurprisingEnv(0.0)).acetylcholine, 0.0);
+        struct SurprisingEnv(f32);
+        impl Environment for SurprisingEnv {
+            fn objective(&self) -> f32 {
+                0.0
+            }
+            fn surprise(&self) -> f32 {
+                self.0
+            }
+        }
+
+        assert_eq!(
+            SimpleCritic::assess(&SurprisingEnv(-0.2)).acetylcholine,
+            0.0
+        );
         assert_eq!(SimpleCritic::assess(&SurprisingEnv(1.5)).acetylcholine, 1.0);
     }
 
