@@ -35,6 +35,9 @@ pub trait Environment {
     /// stateless critics. For a trading bot, this might be anomaly score.
     /// For a game, it could be unexpected state changes or newly discovered
     /// entities. Defaults to 0.0 if not implemented.
+    ///
+    /// Values outside `[0.0, 1.0]` are accepted; critics clamp them to the
+    /// valid modulator range.
     fn surprise(&self) -> f32 {
         0.0
     }
