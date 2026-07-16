@@ -30,8 +30,8 @@ junit.xml
 .kilo/worktrees/
 .kilocode/worktrees/
 .devin/cache/
-.mimocode/auth.json
-.cursor/rules/codacy.mdc
+.mimocode/
+.cursor/
 .cursorignore
 
 # --- Negations: Force-commit the good stuff ---
