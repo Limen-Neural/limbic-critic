@@ -39,8 +39,6 @@ junit.xml
 !.kilo/skills/**
 !.kilo/tui.jsonc
 !.devin/blueprint.yaml
-!.mimocode/mimocode.jsonc
-!.mimocode/AGENTS.md
 !kilocodeignore
 
 # --- Standard dev + your data ---
