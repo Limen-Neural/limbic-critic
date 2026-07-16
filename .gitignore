@@ -30,8 +30,8 @@ junit.xml
 .kilo/worktrees/
 .kilocode/worktrees/
 .devin/cache/
-.mimocode/auth.json
-.cursor/rules/codacy.mdc
+.mimocode/
+.cursor/
 .cursorignore
 
 # --- Negations: Force-commit the good stuff ---
@@ -39,8 +39,6 @@ junit.xml
 !.kilo/skills/**
 !.kilo/tui.jsonc
 !.devin/blueprint.yaml
-!.mimocode/mimocode.jsonc
-!.mimocode/AGENTS.md
 !kilocodeignore
 
 # --- Standard dev + your data ---

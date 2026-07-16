@@ -19,11 +19,11 @@ impl Environment for GenericEnv {
     fn objective(&self) -> f32 {
         self.objective
     }
-    fn stress(&self) -> f32 {
-        self.stress
-    }
     fn volatility(&self) -> f32 {
         self.volatility
+    }
+    fn stress(&self) -> f32 {
+        self.stress
     }
 }
 

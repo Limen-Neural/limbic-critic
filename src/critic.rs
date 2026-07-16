@@ -73,7 +73,7 @@ impl TDCritic {
         self.ema_reward = (1.0 - self.alpha) * self.ema_reward + self.alpha * td_error;
 
         // Map the smoothed reward to dopamine
-        let dopamine = (self.ema_reward.tanh()).clamp(-1.0, 1.0);
+        let dopamine = self.ema_reward.tanh().clamp(-1.0, 1.0);
 
         let stress = env.stress().clamp(0.0, 1.0);
         let serotonin = env.volatility().clamp(0.0, 1.0);
