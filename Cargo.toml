@@ -7,7 +7,7 @@ description = "Neuromodulatory reward shaping and RL critic functions for SNNs."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Limen-Neural/limbic-critic"
 readme = "README.md"
-keywords = ["snn", "neuromodulators", "reinforcement-learning", "reward"]
+keywords = ["snn", "neuromodulators", "rl", "reward"]
 categories = ["science", "simulation"]
 
 [lib]
