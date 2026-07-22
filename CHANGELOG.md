@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-07-16
 
 ### Added
+
 - GitHub Actions CI workflow (fmt, clippy, build, test)
 - Codecov coverage reporting (cargo-llvm-cov) and badge
 - Qodana static analysis CI
@@ -20,11 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SimpleCritic acetylcholine derived from `Environment::surprise` (PR #30)
 
 ### Changed
+
 - Rust edition 2021 → 2024
 - Declared MSRV `rust-version = "1.85"`
 - Critic output field `cortisol` → `norepinephrine`; wire `Environment::volatility()` → serotonin
 
 ### Removed
+
 - Legacy mining/Qubic/Dynex documentation references
 - Unused `serde` dependency
 - Tracked CI log artifacts from the repository
