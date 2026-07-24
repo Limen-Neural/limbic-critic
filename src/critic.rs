@@ -1,26 +1,107 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! RL Critic and Reward Shaping
+//! RL critic and reward shaping.
 //!
-//! This module contains the core logic for translating environmental
-//! observations into neuromodulatory signals.
+//! Translates an [`Environment`] observation into a
+//! [`ModulatorVector`] of neuromodulator
+//! concentrations. Two critics are provided:
+//!
+//! - [`SimpleCritic`] — stateless, maps the immediate objective and optional
+//!   environment signals.
+//! - [`TDCritic`] — stateful temporal-difference critic that tracks reward
+//!   improvement over time.
+//!
+//! # Quick start
+//!
+//! ```rust
+//! use limbic_critic::{Environment, SimpleCritic, TDCritic, ModulatorVector};
+//!
+//! /// Minimal stub environment used only for documentation examples.
+//! struct StubEnv {
+//!     objective: f32,
+//!     surprise: f32,
+//! }
+//!
+//! impl Environment for StubEnv {
+//!     fn objective(&self) -> f32 {
+//!         self.objective
+//!     }
+//!     fn surprise(&self) -> f32 {
+//!         self.surprise
+//!     }
+//! }
+//!
+//! let env = StubEnv {
+//!     objective: 0.75,
+//!     surprise: 0.3,
+//! };
+//!
+//! // Stateless mapping: dopamine ∈ [0, 1], ACh from Environment::surprise
+//! let simple: ModulatorVector = SimpleCritic::assess(&env);
+//! assert!((0.0..=1.0).contains(&simple.dopamine));
+//! assert_eq!(simple.acetylcholine, 0.3);
+//!
+//! // Temporal-difference critic: dopamine ∈ [-1, 1] after tanh of EMA(TD)
+//! let mut td = TDCritic::new(0.1);
+//! let first = td.assess(&env);
+//! assert!((-1.0..=1.0).contains(&first.dopamine));
+//! ```
 
 use crate::environment::Environment;
 use crate::modulators::ModulatorVector;
 
-/// A stateless critic that calculates neuromodulator levels from the
-/// environment's immediate signals.
+/// A stateless critic that maps immediate environment signals to neuromodulators.
 ///
-/// `SimpleCritic` intentionally does not infer acetylcholine from temporal
-/// objective deltas because it stores no previous state. Instead,
-/// acetylcholine is read directly from [`Environment::surprise`] and clamped
-/// to the valid modulator range. Use [`TDCritic`] when acetylcholine should be
-/// derived from temporal-difference surprise (`abs(td_error).tanh()`).
+/// `SimpleCritic` stores no history. It therefore cannot compute temporal
+/// surprise on its own: acetylcholine is read directly from
+/// [`Environment::surprise`] and clamped to `[0.0, 1.0]`. Use [`TDCritic`]
+/// when acetylcholine should be derived from the absolute TD error
+/// (`abs(td_error).tanh()`).
+///
+/// # Mapping
+///
+/// | Field | Source | Range |
+/// |-------|--------|-------|
+/// | `dopamine` | `env.objective()` if positive, else `0.0` | `[0.0, 1.0]` |
+/// | `serotonin` | `env.volatility()` | `[0.0, 1.0]` |
+/// | `acetylcholine` | `env.surprise()` | `[0.0, 1.0]` |
+/// | `norepinephrine` | `env.stress()` | `[0.0, 1.0]` |
+///
+/// # Example
+///
+/// ```rust
+/// use limbic_critic::{Environment, SimpleCritic};
+///
+/// struct StubEnv;
+/// impl Environment for StubEnv {
+///     fn objective(&self) -> f32 { 0.8 }
+///     fn surprise(&self) -> f32 { 0.4 }
+/// }
+///
+/// let mods = SimpleCritic::assess(&StubEnv);
+/// assert_eq!(mods.dopamine, 0.8);
+/// assert_eq!(mods.acetylcholine, 0.4);
+/// ```
 pub struct SimpleCritic;
 
 impl SimpleCritic {
-    /// Calculates neuromodulator concentrations based on the current
-    /// state of the environment.
+    /// Calculate neuromodulator concentrations from the current environment.
+    ///
+    /// # Dopamine
+    ///
+    /// Positive [`Environment::objective`] values are clamped to
+    /// **`[0.0, 1.0]`**. Negative or zero objectives produce `dopamine = 0.0`
+    /// (no negative reward signal).
+    ///
+    /// # Acetylcholine
+    ///
+    /// Taken from [`Environment::surprise`] and clamped to **`[0.0, 1.0]`**.
+    /// This critic does **not** infer ACh from objective deltas.
+    ///
+    /// # Other fields
+    ///
+    /// - `serotonin` ← [`Environment::volatility`] clamped to `[0.0, 1.0]`
+    /// - `norepinephrine` ← [`Environment::stress`] clamped to `[0.0, 1.0]`
     pub fn assess(env: &impl Environment) -> ModulatorVector {
         let objective = env.objective();
 
@@ -44,7 +125,46 @@ impl SimpleCritic {
     }
 }
 
-/// A critic that calculates reward based on the Temporal Difference (TD) error.
+/// A stateful temporal-difference (TD) critic.
+///
+/// Tracks the previous objective and an exponential moving average (EMA) of
+/// the TD error so that dopamine reflects *change* in reward rather than
+/// absolute level. Acetylcholine is derived from surprise in the TD signal
+/// (`abs(td_error).tanh()`), not from [`Environment::surprise`].
+///
+/// # Internal state
+///
+/// | Field | Meaning |
+/// |-------|---------|
+/// | `prev_objective` | Objective observed on the previous [`assess`](Self::assess) call; starts at `0.0`. |
+/// | `ema_reward` | EMA of successive TD errors (`objective - prev_objective`); starts at `0.0`. |
+/// | `alpha` | EMA learning rate in `(0, 1]`. Higher values weight recent TD errors more heavily. |
+///
+/// # Mapping
+///
+/// | Field | Source | Range |
+/// |-------|--------|-------|
+/// | `dopamine` | `ema_reward.tanh()` | **`[-1.0, 1.0]`** |
+/// | `serotonin` | `env.volatility()` | `[0.0, 1.0]` |
+/// | `acetylcholine` | `abs(td_error).tanh()` | `[0.0, 1.0]` |
+/// | `norepinephrine` | `env.stress()` | `[0.0, 1.0]` |
+///
+/// # Example
+///
+/// ```rust
+/// use limbic_critic::{Environment, TDCritic};
+///
+/// struct StubEnv(f32);
+/// impl Environment for StubEnv {
+///     fn objective(&self) -> f32 { self.0 }
+/// }
+///
+/// let mut td = TDCritic::new(0.1);
+/// let step1 = td.assess(&StubEnv(0.0));
+/// let step2 = td.assess(&StubEnv(1.0));
+/// // Improvement produces a higher (more positive) dopamine signal.
+/// assert!(step2.dopamine > step1.dopamine);
+/// ```
 pub struct TDCritic {
     prev_objective: f32,
     ema_reward: f32,
@@ -52,6 +172,28 @@ pub struct TDCritic {
 }
 
 impl TDCritic {
+    /// Create a new TD critic with the given EMA learning rate.
+    ///
+    /// `alpha` controls how quickly the internal EMA of TD errors adapts:
+    ///
+    /// - **Small `alpha`** (e.g. `0.05`) — smooth, slow reaction to changes.
+    /// - **Large `alpha`** (e.g. `0.5`) — fast tracking of recent TD errors.
+    ///
+    /// Initial state:
+    /// - `prev_objective = 0.0`
+    /// - `ema_reward = 0.0`
+    ///
+    /// The first [`assess`](Self::assess) call therefore treats the TD error
+    /// as `objective - 0.0`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use limbic_critic::TDCritic;
+    ///
+    /// let critic = TDCritic::new(0.2);
+    /// // critic is ready; call assess(&env) on each time step
+    /// ```
     pub fn new(alpha: f32) -> Self {
         Self {
             prev_objective: 0.0,
@@ -60,7 +202,26 @@ impl TDCritic {
         }
     }
 
-    /// Calculates neuromodulator concentrations based on the TD error.
+    /// Calculate neuromodulator concentrations from the TD error.
+    ///
+    /// # Algorithm
+    ///
+    /// 1. `td_error = env.objective() - prev_objective`
+    /// 2. Store the current objective as `prev_objective` for the next call.
+    /// 3. `acetylcholine = abs(td_error).tanh()`, clamped to `[0.0, 1.0]`.
+    /// 4. Update EMA: `ema_reward ← (1 - alpha) * ema_reward + alpha * td_error`.
+    /// 5. `dopamine = ema_reward.tanh()`, clamped to **`[-1.0, 1.0]`**.
+    /// 6. `serotonin` / `norepinephrine` from `volatility` / `stress`, each
+    ///    clamped to `[0.0, 1.0]`.
+    ///
+    /// Unlike [`SimpleCritic::assess`], this method mutates internal state and
+    /// can produce **negative dopamine** when recent TD errors are negative
+    /// (worsening outcomes).
+    ///
+    /// # Parameters
+    ///
+    /// - `env` — environment providing the current objective (and optional
+    ///   stress / volatility signals).
     pub fn assess(&mut self, env: &impl Environment) -> ModulatorVector {
         let objective = env.objective();
         let td_error = objective - self.prev_objective;

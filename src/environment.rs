@@ -1,50 +1,123 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Environment Trait
+//! Environment interface for critic evaluation.
 //!
-//! Defines the interface for any external system that the `limbic-critic`
-//! needs to evaluate. This trait abstracts the source of the objective
-//! function, allowing the critic to be agnostic to whether it's evaluating
-//! a trading bot, a game AI, or a hardware system.
+//! The [`Environment`] trait abstracts the external system that a critic
+//! observes — a trading bot, game AI, hardware controller, LLM training loop,
+//! or any other process that can expose a scalar objective (and optional
+//! risk / stress / surprise signals).
+//!
+//! Critics such as [`SimpleCritic`](crate::SimpleCritic) and
+//! [`TDCritic`](crate::TDCritic) depend only on this trait, remaining
+//! agnostic to domain-specific details.
+//!
+//! # Implementing `Environment`
+//!
+//! Only [`objective`](Environment::objective) is required. The other methods
+//! default to `0.0` and can be overridden when the corresponding modulator
+//! channel is useful:
+//!
+//! | Method | Default | Used by critics as |
+//! |--------|---------|--------------------|
+//! | [`objective`](Environment::objective) | *(required)* | reward / TD target |
+//! | [`volatility`](Environment::volatility) | `0.0` | serotonin |
+//! | [`surprise`](Environment::surprise) | `0.0` | acetylcholine (`SimpleCritic` only) |
+//! | [`stress`](Environment::stress) | `0.0` | norepinephrine |
+//!
+//! # Example
+//!
+//! ```rust
+//! use limbic_critic::{Environment, SimpleCritic};
+//!
+//! struct TradingBot {
+//!     pnl: f32,
+//!     market_vol: f32,
+//! }
+//!
+//! impl Environment for TradingBot {
+//!     fn objective(&self) -> f32 {
+//!         self.pnl
+//!     }
+//!     fn volatility(&self) -> f32 {
+//!         self.market_vol
+//!     }
+//! }
+//!
+//! let bot = TradingBot {
+//!     pnl: 0.6,
+//!     market_vol: 0.25,
+//! };
+//! let mods = SimpleCritic::assess(&bot);
+//! assert_eq!(mods.dopamine, 0.6);
+//! assert_eq!(mods.serotonin, 0.25);
+//! ```
 
+/// Interface for any external system that a limbic critic can evaluate.
+///
+/// Implementors provide at least a scalar objective; optional methods supply
+/// secondary signals that map onto serotonin, acetylcholine, and
+/// norepinephrine channels.
+///
+/// See the [module-level documentation](self) for the full mapping table and
+/// a worked example.
 pub trait Environment {
     /// Returns the current scalar objective value from the environment.
     ///
-    /// This value represents the primary metric that the critic should
-    /// optimize. It could be profit-and-loss, cross-entropy loss,
-    /// game score, or any other performance indicator.
+    /// This is the primary metric the critic optimizes — profit-and-loss,
+    /// cross-entropy loss (negated), game score, accuracy, or any other
+    /// performance indicator.
     ///
-    /// The value should be normalized to a consistent range if possible,
-    /// although the critic's reward shaping functions should also be
-    /// robust to unnormalized inputs.
+    /// Prefer a stable, domain-normalized scale when possible. Critics also
+    /// apply their own clamps / nonlinearities (`clamp`, `tanh`) so raw
+    /// unnormalized values are accepted, but extreme magnitudes will saturate
+    /// the resulting modulators.
+    ///
+    /// # Used by
+    ///
+    /// - [`SimpleCritic`](crate::SimpleCritic): positive values → dopamine in
+    ///   `[0, 1]`; non-positive → dopamine `0`.
+    /// - [`TDCritic`](crate::TDCritic): difference from the previous objective
+    ///   drives the TD error and thus dopamine / acetylcholine.
     fn objective(&self) -> f32;
 
-    /// Returns a scalar value representing environmental volatility or risk.
+    /// Returns environmental volatility or risk.
     ///
-    /// This is optional and can be used to modulate serotonin levels.
-    /// For a trading bot, this might be market volatility.
-    /// For a game, it could be the number of enemies on screen.
-    /// Defaults to 0.0 if not implemented.
+    /// Optional. Mapped to **serotonin** (clamped to `[0.0, 1.0]`) by both
+    /// critics. Defaults to `0.0` if not overridden.
+    ///
+    /// Domain examples:
+    /// - Trading: realized or implied market volatility.
+    /// - Games: number of threats / enemy density.
+    /// - Training: loss variance over a recent window.
     fn volatility(&self) -> f32 {
         0.0
     }
 
-    /// Returns a scalar value representing environmental surprise or novelty.
+    /// Returns environmental surprise or novelty.
     ///
-    /// This is optional and can be used to modulate acetylcholine levels in
-    /// stateless critics. For a trading bot, this might be anomaly score.
-    /// For a game, it could be unexpected state changes or newly discovered
-    /// entities. Defaults to 0.0 if not implemented.
+    /// Optional. Used by [`SimpleCritic`](crate::SimpleCritic) as the source
+    /// of **acetylcholine** (clamped to `[0.0, 1.0]`).
+    /// [`TDCritic`](crate::TDCritic) ignores this method and instead derives
+    /// acetylcholine from `abs(td_error).tanh()`. Defaults to `0.0` if not
+    /// overridden.
+    ///
+    /// Domain examples:
+    /// - Trading: anomaly or regime-change score.
+    /// - Games: unexpected state transitions or newly discovered entities.
+    /// - Sensors: prediction residual / novelty detector output.
     fn surprise(&self) -> f32 {
         0.0
     }
 
-    /// Returns a scalar value representing system stress or instability.
+    /// Returns system stress or instability.
     ///
-    /// This is optional and can be used to modulate norepinephrine levels.
-    /// For a hardware system, this might be temperature or power draw.
-    /// For a software system, it could be error rates or latency.
-    /// Defaults to 0.0 if not implemented.
+    /// Optional. Mapped to **norepinephrine** (clamped to `[0.0, 1.0]`) by
+    /// both critics. Defaults to `0.0` if not overridden.
+    ///
+    /// Domain examples:
+    /// - Hardware: temperature, power draw, thermal throttling.
+    /// - Software: error rate, p99 latency, queue depth.
+    /// - Agents: resource depletion or constraint violation severity.
     fn stress(&self) -> f32 {
         0.0
     }
