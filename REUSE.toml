@@ -4,8 +4,8 @@
 version = 1
 
 SPDX-PackageName = "limbic-critic"
-SPDX-PackageSupplier = "Limen-Neural contributors <https://github.com/Limen-Neural>"
-SPDX-PackageDownloadLocation = "https://github.com/Limen-Neural/limbic-critic"
+SPDX-PackageSupplier = "rmems contributors <https://github.com/rmems>"
+SPDX-PackageDownloadLocation = "https://github.com/rmems/limbic-critic"
 
 [[annotations]]
 path = ["src/**", "examples/**"]
