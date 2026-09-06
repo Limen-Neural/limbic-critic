@@ -28,7 +28,7 @@ Until published on crates.io, depend on the git repository:
 
 ```toml
 [dependencies]
-limbic-critic = { git = "https://github.com/Limen-Neural/limbic-critic" }
+limbic-critic = { git = "https://github.com/rmems/limbic-critic" }
 ```
 
 After publish:
@@ -48,7 +48,7 @@ cargo run --example generic_environment
 | Layer | Role | Crate / repo |
 |-------|------|----------------|
 | Application | Implements `Environment` for your domain | your app / adapters |
-| **limbic-critic** | Produces local `ModulatorVector` via `SimpleCritic` / `TDCritic` | [limbic-critic](https://github.com/Limen-Neural/limbic-critic) |
+| **limbic-critic** | Produces local `ModulatorVector` via `SimpleCritic` / `TDCritic` | [limbic-critic](https://github.com/rmems/limbic-critic) |
 | Bridge | Maps `ModulatorVector` → neuromod `NeuroModulators` | [plasticity-lab](https://github.com/Limen-Neural/plasticity-lab) |
 | Plasticity | Consumes modulators in `rm_stdp` | [neuromod](https://github.com/Limen-Neural/neuromod) |
 
@@ -59,7 +59,7 @@ siblings; integration happens in application or bridge crates.
 ## Scope and Ownership Boundaries
 
 See the full matrix: [`docs/BOUNDARY_MATRIX.md`](docs/BOUNDARY_MATRIX.md)
-(LIM-9 / [GH#9](https://github.com/Limen-Neural/limbic-critic/issues/9)).
+(LIM-9 / [GH#9](https://github.com/rmems/limbic-critic/issues/9)).
 
 **Owns:**
 
@@ -98,15 +98,15 @@ These development commands, hygiene improvements, test assertions, MSRV
 declaration, artifact cleanup, and Codecov integration were contributed by the
 following GitHub issues (bundled as beads lc-r97 / PR #28):
 
-* [GH-16](https://github.com/Limen-Neural/limbic-critic/issues/16): Remove tracked CI log artifacts
-* [GH-17](https://github.com/Limen-Neural/limbic-critic/issues/17): Remove unused serde dependency
-* [GH-18](https://github.com/Limen-Neural/limbic-critic/issues/18): Add serotonin/volatility assertions for critic assess()
-* [GH-24](https://github.com/Limen-Neural/limbic-critic/issues/24): Add rust-version MSRV to Cargo.toml
-* [GH-27](https://github.com/Limen-Neural/limbic-critic/issues/27): Add Codecov coverage reporting (cargo-llvm-cov + badge)
+* [GH-16](https://github.com/rmems/limbic-critic/issues/16): Remove tracked CI log artifacts
+* [GH-17](https://github.com/rmems/limbic-critic/issues/17): Remove unused serde dependency
+* [GH-18](https://github.com/rmems/limbic-critic/issues/18): Add serotonin/volatility assertions for critic assess()
+* [GH-24](https://github.com/rmems/limbic-critic/issues/24): Add rust-version MSRV to Cargo.toml
+* [GH-27](https://github.com/rmems/limbic-critic/issues/27): Add Codecov coverage reporting (cargo-llvm-cov + badge)
 
 ## Coverage
 
-[![codecov](https://codecov.io/gh/Limen-Neural/limbic-critic/branch/main/graph/badge.svg)](https://codecov.io/gh/Limen-Neural/limbic-critic)
+[![codecov](https://codecov.io/gh/rmems/limbic-critic/branch/main/graph/badge.svg)](https://codecov.io/gh/rmems/limbic-critic)
 
 ## License
 
