@@ -7,14 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- `CONTRIBUTING.md` with a neuromorphic relevance gate (five review
-  questions) so future changes preserve the crate's SNN/neuromodulatory
-  identity instead of drifting into a generic RL/ML framework (#59).
-- `.github/pull_request_template.md` with a scope checklist derived from
-  the relevance gate and a CI-matching verification checklist.
-
 ### Changed
 
 - Pin Rust **1.98.1** in lockstep across `rust-version`, `rust-toolchain.toml`, and CI/coverage workflows.
@@ -25,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `package.exclude` for CI/agent-only paths and a `cargo package` CI job.
 - Focused unit tests for SimpleCritic clamps, TD dopamine sign, ACh `|td|.tanh()`, and zero/negative objectives.
+- `CONTRIBUTING.md` with a neuromorphic relevance gate (five review
+  questions) so future changes preserve the crate's SNN/neuromodulatory
+  identity instead of drifting into a generic RL/ML framework (#59).
+- `.github/pull_request_template.md` with a scope checklist derived from
+  the relevance gate and a CI-matching verification checklist.
 
 ### Fixed
 
