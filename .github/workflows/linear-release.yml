@@ -33,7 +33,7 @@ jobs:
     # Fork/no-secret guard: skip entirely rather than fail when this repo's
     # LINEAR_ACCESS_KEY secret isn't configured (e.g. a fork, or before the
     # repo owner has added it).
-    if: github.repository == 'rmems/limbic-critic' && github.event.repository.fork == false
+    if: github.repository == 'Limen-Neural/limbic-critic' && github.event.repository.fork == false
     permissions:
       contents: read
     steps:
