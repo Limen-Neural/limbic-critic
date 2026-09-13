@@ -1,72 +1,108 @@
-# Linear Release sync (GH-56): syncs GitHub commits/PRs/tags into the
-# Linear "limbic-critic" Releases pipeline (twins LIM/RM <-> GH).
+# Linear Release — scheduled pipeline (named versions already exist in Linear).
 #
-# Required repository secret:
-#   LINEAR_ACCESS_KEY - Linear pipeline access key for authentication.
-#     Generate it from the Linear release pipeline's settings and add it
-#     under Settings -> Secrets and variables -> Actions -> New repository
-#     secret. Until this secret is set, every job below no-ops (guarded by
-#     the `if:` conditions), so merging this workflow is safe on its own.
+# Kept out of ci.yml: that workflow is the Rust MSRV / build / test / package
+# gate. This job only talks to Linear Releases and must fetch full git history
+# (`fetch-depth: 0`).
 #
-# Behavior:
-#   - push to main: `sync` (default command, no `version`) so ordinary
-#     commits/PRs continuously attach to the current Linear release.
-#   - push of a `v*` tag (the crates.io publish path, e.g. v0.2.0): `sync`
-#     with `version: ${{ github.ref_name }}` so the scheduled/publish
-#     pipeline's release gets tagged with the concrete version, per the
-#     action's "Command targeting" docs (always pass `version` for
-#     scheduled pipelines, especially when releases overlap).
+# Pipeline: https://linear.app/rpd-34/pipeline/limbic-critic/releases
+# Action:   linear/linear-release-action@v0  (issue #56 / RM-1176)
 #
-# Guarded with `github.repository` and a secret-presence check so this is a
-# no-op on forks or before the secret is configured, rather than failing CI.
+# GitHub remains source of truth for issue state. Commits and PR titles
+# should keep carrying Linear identifiers (RM-xxxx) so scanning can attach
+# issues; no extra `issue_pattern` is configured.
+#
+# Requires repo or org secret LINEAR_ACCESS_KEY (same Linear pipeline access
+# key used on synaptic-mesh). Do not invent a value here. Limen-Neural already
+# has LINEAR_ACCESS_KEY as an organization Actions secret.
+
 name: Linear Release
 
 on:
   push:
     branches: [main]
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Scan commits without mutating Linear releases
+        type: boolean
+        default: true
+      version:
+        description: Linear release version (defaults to 0.2.0)
+        required: false
+        type: string
+        default: "0.2.0"
+
+# Serialize main-push sync and tag complete against the same Linear release.
+# Do not cancel in-progress: a tag complete must not interleave with a push sync.
+concurrency:
+  group: linear-release-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
-  sync:
+  linear-release:
     name: Sync Linear release
     runs-on: ubuntu-latest
-    # Fork/no-secret guard: skip entirely rather than fail when this repo's
-    # LINEAR_ACCESS_KEY secret isn't configured (e.g. a fork, or before the
-    # repo owner has added it).
-    if: github.repository == 'Limen-Neural/limbic-critic' && github.event.repository.fork == false
     permissions:
       contents: read
-    # The `secrets` context is NOT available in `if:` conditionals (neither
-    # job- nor step-level), so the secret is surfaced here as an env var and
-    # the step guards on `env`, which IS available in a step-level `if:`.
-    env:
-      LINEAR_ACCESS_KEY: ${{ secrets.LINEAR_ACCESS_KEY }}
     steps:
-      # Pinned to full commit SHA for supply-chain security (corresponds to
-      # actions/checkout@v4.4.0, matching the v4 tag GH-56's acceptance
-      # criteria specifically calls out - ci.yml/coverage.yml use a v7 pin
-      # instead, but this workflow follows the issue as written). NOTE: this
-      # workflow also needs `fetch-depth: 0` (full history), unlike
-      # ci.yml/coverage.yml, because the Linear Release CLI scans the commit
-      # range since the last release to find Linear issue identifiers and PR
-      # references - a shallow checkout would hide that history from it.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (v4.4.0)
-        # Same guard as the sync step: without the key there is nothing to do,
-        # so skip the full-history clone rather than fetching the whole repo
-        # and then no-oping.
-        if: ${{ env.LINEAR_ACCESS_KEY != '' }}
+      # Same immutable SHA as ci.yml / coverage.yml (v7.0.0). fetch-depth: 0
+      # is required so the Linear action can scan full commit history.
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          fetch-depth: 0
           persist-credentials: false
+          fetch-depth: 0
 
-      # Pinned to full commit SHA for supply-chain security (corresponds to
-      # linear/linear-release-action@v0, per GH-56 acceptance criteria).
-      - name: Linear Release sync
-        if: ${{ env.LINEAR_ACCESS_KEY != '' }}
+      # Push to main: hardcoded 0.2.0 (Linear In Progress), same active-train
+      # pattern as synaptic-mesh. After 0.2.0 is completed, bump this default
+      # (and workflow_dispatch default) when the next Linear release opens. Do
+      # not invent dynamic version discovery.
+      # Tag: vMAJOR.MINOR.PATCH only (v0.2.0 → 0.2.0); anything else is empty
+      # and skips sync and complete. workflow_dispatch: version input, default 0.2.0.
+      - name: Resolve Linear release version
+        id: version
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          DISPATCH_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '' }}
+        run: |
+          set -euo pipefail
+          version=""
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            version="${DISPATCH_VERSION}"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            if [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              version="${REF_NAME#v}"
+            else
+              echo "Ignoring tag ${REF_NAME}: Linear release tags must be vMAJOR.MINOR.PATCH"
+            fi
+          else
+            version="0.2.0"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      # dry_run only on workflow_dispatch when requested (default true there).
+      # Main pushes and tag pushes always mutate. Same expression on complete so
+      # a tag-ref dispatch with dry_run cannot mark a Linear release released.
+      - name: Sync issues into Linear release
+        if: github.event_name != 'push' || github.ref_type != 'tag' || steps.version.outputs.version != ''
         uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0
         with:
-          access_key: ${{ env.LINEAR_ACCESS_KEY }}
-          # command defaults to "sync". On a publish tag, pin the release to
-          # that exact version per the action's scheduled-pipeline guidance;
-          # on plain main pushes leave version unset for continuous sync.
-          version: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          command: sync
+          version: ${{ steps.version.outputs.version }}
+          dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+
+      - name: Complete Linear release for tagged version
+        if: github.ref_type == 'tag' && steps.version.outputs.version != ''
+        uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          command: complete
+          version: ${{ steps.version.outputs.version }}
+          dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
