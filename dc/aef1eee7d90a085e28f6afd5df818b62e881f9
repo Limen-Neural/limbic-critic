@@ -1,0 +1,23 @@
+CHANGELOG.md
+  s_162fc60dc75a42::t_eb5cf5b671cb57 20
+.github/workflows/linear-release.yml
+  s_162fc60dc75a42::t_2d2921ac5c21fd 1-40,49-63
+  s_162fc60dc75a42::t_a74f2115568a97 48
+  s_162fc60dc75a42::t_d1650410bfbb83 41-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "dcaef1eee7d90a085e28f6afd5df818b62e881f9",
+  "prompts": {},
+  "sessions": {
+    "s_162fc60dc75a42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cef7f38d-f503-4523-88cb-0838b8cc5299",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}
