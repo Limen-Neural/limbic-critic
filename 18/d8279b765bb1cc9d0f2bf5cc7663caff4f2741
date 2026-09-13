@@ -1,0 +1,9 @@
+.github/workflows/linear-release.yml
+  ai_agent 54-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "18d8279b765bb1cc9d0f2bf5cc7663caff4f2741",
+  "prompts": {}
+}
