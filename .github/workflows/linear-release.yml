@@ -35,9 +35,12 @@ on:
 
 # Serialize main-push sync and tag complete against the same Linear release.
 # Do not cancel in-progress: a tag complete must not interleave with a push sync.
+# queue: max (up to 100 pending) so a later main push cannot replace a pending
+# tag complete (default queue is a single pending run).
 concurrency:
   group: linear-release-${{ github.repository }}
   cancel-in-progress: false
+  queue: max
 
 permissions:
   contents: read
@@ -73,13 +76,19 @@ jobs:
         run: |
           set -euo pipefail
           version=""
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            version="${DISPATCH_VERSION}"
-          elif [ "$REF_TYPE" = "tag" ]; then
+          # Tag refs always win, including workflow_dispatch targeting a tag, so
+          # a mismatched dispatch version cannot complete the wrong Linear release.
+          if [ "$REF_TYPE" = "tag" ]; then
             if [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               version="${REF_NAME#v}"
             else
               echo "Ignoring tag ${REF_NAME}: Linear release tags must be vMAJOR.MINOR.PATCH"
+            fi
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            version="${DISPATCH_VERSION#"${DISPATCH_VERSION%%[![:space:]]*}"}"
+            version="${version%"${version##*[![:space:]]}"}"
+            if [ -z "$version" ]; then
+              echo "Ignoring empty workflow_dispatch version"
             fi
           else
             version="0.2.0"
@@ -90,7 +99,7 @@ jobs:
       # Main pushes and tag pushes always mutate. Same expression on complete so
       # a tag-ref dispatch with dry_run cannot mark a Linear release released.
       - name: Sync issues into Linear release
-        if: github.event_name != 'push' || github.ref_type != 'tag' || steps.version.outputs.version != ''
+        if: steps.version.outputs.version != ''
         uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0
         with:
           access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
