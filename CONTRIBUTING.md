@@ -58,6 +58,21 @@ RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
 cargo build --all-features
 ```
 
+CI runs two more checks that are easy to miss locally:
+
+```bash
+# `package` job: the published tarball must contain only intended artifacts.
+# CI additionally asserts the contents, so an accidental dev file fails the build.
+cargo package --list --allow-dirty
+cargo package --allow-dirty
+
+# Coverage job (a single nextest pass through llvm-cov):
+cargo llvm-cov nextest --all-features --profile ci --lcov --output-path lcov.info
+```
+
+If you add a development-only file, check whether it belongs in `package.exclude`
+in `Cargo.toml` so it does not ship to crates.io.
+
 **MSRV:** Rust 1.98.1. `Cargo.toml` `rust-version`, `rust-toolchain.toml`,
 and both CI workflows (`ci.yml`, `coverage.yml`) are pinned to this version
 in lockstep — CI actively fails if any of them disagree, so update all four
