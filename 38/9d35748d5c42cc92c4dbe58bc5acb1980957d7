@@ -1,0 +1,27 @@
+Cargo.toml
+  s_162fc60dc75a42::t_75da0106df6274 10-11
+README.md
+  s_162fc60dc75a42::t_e8f0a3bbccc705 42,62,73,115-119,123
+CHANGELOG.md
+  s_162fc60dc75a42::t_19244ed3d1ee76 15
+REUSE.toml
+  s_162fc60dc75a42::t_37df61e02f4548 7-8
+.github/workflows/coverage.yml
+  s_162fc60dc75a42::t_6e510bd62165a8 60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "389d35748d5c42cc92c4dbe58bc5acb1980957d7",
+  "prompts": {},
+  "sessions": {
+    "s_162fc60dc75a42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cef7f38d-f503-4523-88cb-0838b8cc5299",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}
