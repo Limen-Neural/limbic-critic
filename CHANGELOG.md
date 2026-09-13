@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- CI `Build & Test` job now matrices `ubuntu-latest`, `macos-latest`, and `windows-latest` (`fail-fast: false`); `cargo fmt --check` and `cargo doc` stay Linux-only, and `cargo package` stays on ubuntu-latest.
 - `docs/ARCHITECTURE.md` codifying the neuromorphic/SNN scope contract: the
   canonical `Environment → Critic → ModulatorVector → plasticity/SNN` flow,
   owns/does-not-own lists, the modulator vocabulary with per-critic clamp
