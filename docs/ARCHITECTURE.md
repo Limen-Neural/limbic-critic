@@ -1,6 +1,6 @@
 # limbic-critic: Architecture Contract
 
-> Codifies [GH#58](https://github.com/rmems/limbic-critic/issues/58): the
+> Codifies [GH#58](https://github.com/Limen-Neural/limbic-critic/issues/58): the
 > long-term scope contract that keeps `limbic-critic` in the
 > **neuromorphic / spiking-neural-network (SNN)** domain rather than
 > drifting into a generic reinforcement-learning or ML utility crate.
