@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `docs/ARCHITECTURE.md` codifying the neuromorphic/SNN scope contract: the
+  canonical `Environment → Critic → ModulatorVector → plasticity/SNN` flow,
+  owns/does-not-own lists, the modulator vocabulary with per-critic clamp
+  ranges, and the dependency contract (semantic interop with `neuromod` /
+  `plasticity-lab`, zero runtime dependencies, sibling Cargo dependencies
+  forbidden). (GH#58)
 - `package.exclude` for CI/agent-only paths and a `cargo package` CI job.
 - Focused unit tests for SimpleCritic clamps, TD dopamine sign, ACh `|td|.tanh()`, and zero/negative objectives.
 
