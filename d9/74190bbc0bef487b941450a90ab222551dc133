@@ -1,0 +1,21 @@
+docs/ARCHITECTURE.md
+  s_162fc60dc75a42::t_2781076fcaf7b3 1-114
+CHANGELOG.md
+  s_162fc60dc75a42::t_c43e6e0caa609f 10-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d974190bbc0bef487b941450a90ab222551dc133",
+  "prompts": {},
+  "sessions": {
+    "s_162fc60dc75a42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cef7f38d-f503-4523-88cb-0838b8cc5299",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}
