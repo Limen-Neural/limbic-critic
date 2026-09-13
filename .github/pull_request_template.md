@@ -50,3 +50,4 @@ Pick exactly ONE of the two blocks below.
 - [ ] `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features`
 - [ ] `cargo build --all-features`
 - [ ] `cargo package --list --allow-dirty` (the `package` CI job also asserts contents)
+- [ ] `cargo package --allow-dirty`
