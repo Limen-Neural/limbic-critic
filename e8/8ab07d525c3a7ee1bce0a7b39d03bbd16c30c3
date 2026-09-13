@@ -1,0 +1,26 @@
+CLAUDE.md
+  s_162fc60dc75a42::t_7f05b30441c565 1-30,32-104
+  s_162fc60dc75a42::t_4703151a378739 31
+Cargo.toml
+  s_162fc60dc75a42::t_63537ab33d665d 20
+.github/workflows/ci.yml
+  s_162fc60dc75a42::t_63537ab33d665d 146
+CHANGELOG.md
+  s_162fc60dc75a42::t_bb5fd070beae85 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e88ab07d525c3a7ee1bce0a7b39d03bbd16c30c3",
+  "prompts": {},
+  "sessions": {
+    "s_162fc60dc75a42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cef7f38d-f503-4523-88cb-0838b8cc5299",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}
