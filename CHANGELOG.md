@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Stopped tracking `.beads/` (stale local issue-tracker state; it stays gitignored and is already excluded from the published crate).
 - Qodana Cloud scan (`qodana-rust` + token workflow); membership expired. Clippy and Codecov remain.
 
 ## [0.2.0] - 2026-07-16
