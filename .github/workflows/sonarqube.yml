@@ -23,17 +23,22 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # Fork PRs never receive repository secrets, so the scan could never run.
+    # Skip the job outright there: a skipped check is honest, whereas a job
+    # that exits green with no analysis behind it misleads branch protection
+    # and reviewers.
+    if: github.event.pull_request.head.repo.fork != true
     # The `secrets` context is NOT available in `if:` conditionals (neither
     # job- nor step-level), so the token is surfaced here as an env var and
     # the scan step guards on `env`, which IS available in a step-level `if:`.
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
-      # Pinned to a full commit SHA for supply-chain security, matching the
-      # convention in ci.yml / coverage.yml. NOTE: unlike those workflows this
-      # one needs `fetch-depth: 0` — a shallow clone degrades SonarQube's blame
+      # Pinned to a full commit SHA for supply-chain security, using the same
+      # v7 pin as ci.yml / coverage.yml. NOTE: unlike those workflows this one
+      # needs `fetch-depth: 0` — a shallow clone degrades SonarQube's blame
       # data and new-code detection.
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
