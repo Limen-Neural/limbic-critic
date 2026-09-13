@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pin Rust **1.98.1** in lockstep across `rust-version`, `rust-toolchain.toml`, and CI/coverage workflows.
 - Position the crate as a reward-shaping / modulator-mapping primitive (not a full actor–critic).
 - Cargo.toml publish metadata: authors, homepage, documentation, docs.rs, keywords (`rl` → `reward-shaping`).
+- Migrate self-referencing repository URLs (`Cargo.toml`, `REUSE.toml`, `README.md`, Codecov slug) from `rmems/limbic-critic` to the canonical `Limen-Neural/limbic-critic` home following the GitHub repository transfer (#60).
 
 ### Added
 
