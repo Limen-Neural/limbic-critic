@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docs/ARCHITECTURE.md` codifying the neuromorphic/SNN scope contract: the
+  canonical `Environment → Critic → ModulatorVector → plasticity/SNN` flow,
+  owns/does-not-own lists, the modulator vocabulary with per-critic clamp
+  ranges, and the dependency contract (semantic interop with `neuromod` /
+  `plasticity-lab`, zero runtime dependencies, sibling Cargo dependencies
+  forbidden). (GH#58)
+
 ### Changed
 
 - Pin Rust **1.98.1** in lockstep across `rust-version`, `rust-toolchain.toml`, and CI/coverage workflows.
