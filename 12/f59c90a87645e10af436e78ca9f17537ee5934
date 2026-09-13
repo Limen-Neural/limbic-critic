@@ -1,0 +1,23 @@
+.github/workflows/sonarqube.yml
+  s_162fc60dc75a42::t_8d41c400727efa 1-25,31-36,40,42-50
+  s_162fc60dc75a42::t_cd17f4ecd61c18 26-30,37-39,41
+sonar-project.properties
+  s_162fc60dc75a42::t_44e4f54ea5a097 1-8,11-12
+  s_162fc60dc75a42::t_cd17f4ecd61c18 9-10,13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "12f59c90a87645e10af436e78ca9f17537ee5934",
+  "prompts": {},
+  "sessions": {
+    "s_162fc60dc75a42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cef7f38d-f503-4523-88cb-0838b8cc5299",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}

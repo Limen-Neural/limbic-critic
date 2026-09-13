@@ -1,0 +1,27 @@
+REUSE.toml
+  s_162fc60dc75a42::t_aca69c78f33657 25
+Cargo.toml
+  s_162fc60dc75a42::t_aca69c78f33657 27
+.github/workflows/ci.yml
+  s_162fc60dc75a42::t_aca69c78f33657 150
+sonar-project.properties
+  s_162fc60dc75a42::t_44e4f54ea5a097 1-8,10-11
+.github/workflows/sonarqube.yml
+  s_162fc60dc75a42::t_8d41c400727efa 1-31,35,37-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "dda3b4c9eff90908db580ecd32a6b4db382f702c",
+  "prompts": {},
+  "sessions": {
+    "s_162fc60dc75a42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cef7f38d-f503-4523-88cb-0838b8cc5299",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}
