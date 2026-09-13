@@ -1,0 +1,63 @@
+# Linear Release sync (GH-56): syncs GitHub commits/PRs/tags into the
+# Linear "limbic-critic" Releases pipeline (twins LIM/RM <-> GH).
+#
+# Required repository secret:
+#   LINEAR_ACCESS_KEY - Linear pipeline access key for authentication.
+#     Generate it from the Linear release pipeline's settings and add it
+#     under Settings -> Secrets and variables -> Actions -> New repository
+#     secret. Until this secret is set, every job below no-ops (guarded by
+#     the `if:` conditions), so merging this workflow is safe on its own.
+#
+# Behavior:
+#   - push to main: `sync` (default command, no `version`) so ordinary
+#     commits/PRs continuously attach to the current Linear release.
+#   - push of a `v*` tag (the crates.io publish path, e.g. v0.2.0): `sync`
+#     with `version: ${{ github.ref_name }}` so the scheduled/publish
+#     pipeline's release gets tagged with the concrete version, per the
+#     action's "Command targeting" docs (always pass `version` for
+#     scheduled pipelines, especially when releases overlap).
+#
+# Guarded with `github.repository` and a secret-presence check so this is a
+# no-op on forks or before the secret is configured, rather than failing CI.
+name: Linear Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+jobs:
+  sync:
+    name: Sync Linear release
+    runs-on: ubuntu-latest
+    # Fork/no-secret guard: skip entirely rather than fail when this repo's
+    # LINEAR_ACCESS_KEY secret isn't configured (e.g. a fork, or before the
+    # repo owner has added it).
+    if: github.repository == 'rmems/limbic-critic' && github.event.repository.fork == false
+    permissions:
+      contents: read
+    steps:
+      # Pinned to full commit SHA for supply-chain security (corresponds to
+      # actions/checkout@v4.4.0, matching the v4 tag GH-56's acceptance
+      # criteria specifically calls out - ci.yml/coverage.yml use a v7 pin
+      # instead, but this workflow follows the issue as written). NOTE: this
+      # workflow also needs `fetch-depth: 0` (full history), unlike
+      # ci.yml/coverage.yml, because the Linear Release CLI scans the commit
+      # range since the last release to find Linear issue identifiers and PR
+      # references - a shallow checkout would hide that history from it.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4 (v4.4.0)
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Pinned to full commit SHA for supply-chain security (corresponds to
+      # linear/linear-release-action@v0, per GH-56 acceptance criteria).
+      - name: Linear Release sync
+        if: ${{ secrets.LINEAR_ACCESS_KEY != '' }}
+        uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0
+        with:
+          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          # command defaults to "sync". On a publish tag, pin the release to
+          # that exact version per the action's scheduled-pipeline guidance;
+          # on plain main pushes leave version unset for continuous sync.
+          version: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
