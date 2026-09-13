@@ -78,6 +78,10 @@ and both CI workflows (`ci.yml`, `coverage.yml`) are pinned to this version
 in lockstep — CI actively fails if any of them disagree, so update all four
 together if the MSRV ever changes.
 
+CI's **Build & Test** job runs on `ubuntu-latest`, `macos-latest`, and
+`windows-latest` with `fail-fast: false`. `cargo fmt --check` and `cargo doc`
+run on Linux only; the `package` job stays on `ubuntu-latest`.
+
 ## Licensing
 
 This project is dual-licensed under MIT OR Apache-2.0 and is
