@@ -17,6 +17,7 @@ categories = ["science", "simulation"]
 # and BOUNDARY_MATRIX. Drop agent/CI/dev-only paths and the unused docs logo.
 exclude = [
     "/.beads/",
+    "/CLAUDE.md",
     "/.config/",
     "/.github/",
     "/.gitignore",

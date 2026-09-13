@@ -143,6 +143,7 @@ jobs:
           forbidden=(
             .github/workflows/ci.yml
             .beads/config.yaml
+            CLAUDE.md
             .config/nextest.toml
             codecov.yml
             rust-toolchain.toml

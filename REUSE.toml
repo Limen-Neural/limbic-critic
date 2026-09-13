@@ -38,9 +38,3 @@ path = ["docs/**/*.png", "docs/**/*.jpg", "docs/**/*.svg"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Limen-Neural contributors"
 SPDX-License-Identifier = "MIT OR Apache-2.0"
-
-[[annotations]]
-path = [".beads/**"]
-precedence = "aggregate"
-SPDX-FileCopyrightText = "2026 Limen-Neural contributors"
-SPDX-License-Identifier = "MIT OR Apache-2.0"
