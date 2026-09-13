@@ -22,6 +22,7 @@ path = [
     "rust-toolchain.toml",
     ".gitignore",
     ".config/**",
+    "sonar-project.properties",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Limen-Neural contributors"

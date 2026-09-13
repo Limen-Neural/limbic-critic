@@ -147,6 +147,7 @@ jobs:
             .config/nextest.toml
             codecov.yml
             rust-toolchain.toml
+            sonar-project.properties
             docs/logo.png
             .gitignore
           )

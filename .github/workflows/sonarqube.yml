@@ -1,0 +1,45 @@
+# SonarQube Cloud analysis.
+#
+# Required repository secret:
+#   SONAR_TOKEN - SonarQube Cloud analysis token. Generate it in SonarQube
+#     Cloud (My Account -> Security, or the project's Administration ->
+#     Analysis Method) and add it under Settings -> Secrets and variables ->
+#     Actions -> New repository secret. Until this secret is set the scan
+#     step is skipped, so merging this workflow is safe on its own.
+#
+# Project configuration (projectKey / organization) lives in
+# sonar-project.properties at the repository root.
+name: SonarQube
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # The `secrets` context is NOT available in `if:` conditionals (neither
+    # job- nor step-level), so the token is surfaced here as an env var and
+    # the scan step guards on `env`, which IS available in a step-level `if:`.
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      # Pinned to a full commit SHA for supply-chain security, matching the
+      # convention in ci.yml / coverage.yml. NOTE: unlike those workflows this
+      # one needs `fetch-depth: 0` — a shallow clone degrades SonarQube's blame
+      # data and new-code detection.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: SonarQube Scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
