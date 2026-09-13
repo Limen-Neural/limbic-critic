@@ -1,0 +1,21 @@
+.beads/issues.jsonl
+  ai_agent 2-7
+CHANGELOG.md
+  s_162fc60dc75a42::t_f615bd092510dd 20-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0ee1b218da4171ff959716aed2dce2b2e810abe5",
+  "prompts": {},
+  "sessions": {
+    "s_162fc60dc75a42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cef7f38d-f503-4523-88cb-0838b8cc5299",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}
