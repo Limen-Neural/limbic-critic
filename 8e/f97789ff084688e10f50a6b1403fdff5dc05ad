@@ -1,0 +1,23 @@
+CHANGELOG.md
+  s_162fc60dc75a42::t_e640fc26baa11d 10-17
+CONTRIBUTING.md
+  s_162fc60dc75a42::t_76c052b8ec0ff8 1-79
+.github/pull_request_template.md
+  s_162fc60dc75a42::t_db51142d80183b 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8ef97789ff084688e10f50a6b1403fdff5dc05ad",
+  "prompts": {},
+  "sessions": {
+    "s_162fc60dc75a42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cef7f38d-f503-4523-88cb-0838b8cc5299",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}
