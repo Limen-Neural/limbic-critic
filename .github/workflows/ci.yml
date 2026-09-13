@@ -143,9 +143,11 @@ jobs:
           forbidden=(
             .github/workflows/ci.yml
             .beads/config.yaml
+            CLAUDE.md
             .config/nextest.toml
             codecov.yml
             rust-toolchain.toml
+            sonar-project.properties
             docs/logo.png
             .gitignore
           )

@@ -57,6 +57,6 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: lcov.info
-          slug: rmems/limbic-critic
+          slug: Limen-Neural/limbic-critic
           fail_ci_if_error: false
           verbose: true

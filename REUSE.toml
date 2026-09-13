@@ -4,8 +4,8 @@
 version = 1
 
 SPDX-PackageName = "limbic-critic"
-SPDX-PackageSupplier = "rmems contributors <https://github.com/rmems>"
-SPDX-PackageDownloadLocation = "https://github.com/rmems/limbic-critic"
+SPDX-PackageSupplier = "Limen-Neural contributors <https://github.com/Limen-Neural>"
+SPDX-PackageDownloadLocation = "https://github.com/Limen-Neural/limbic-critic"
 
 [[annotations]]
 path = ["src/**", "examples/**"]
@@ -22,6 +22,7 @@ path = [
     "rust-toolchain.toml",
     ".gitignore",
     ".config/**",
+    "sonar-project.properties",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Limen-Neural contributors"
@@ -35,12 +36,6 @@ SPDX-License-Identifier = "MIT OR Apache-2.0"
 
 [[annotations]]
 path = ["docs/**/*.png", "docs/**/*.jpg", "docs/**/*.svg"]
-precedence = "aggregate"
-SPDX-FileCopyrightText = "2026 Limen-Neural contributors"
-SPDX-License-Identifier = "MIT OR Apache-2.0"
-
-[[annotations]]
-path = [".beads/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Limen-Neural contributors"
 SPDX-License-Identifier = "MIT OR Apache-2.0"
