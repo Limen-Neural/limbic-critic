@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Focused unit tests for SimpleCritic clamps, TD dopamine sign, ACh `|td|.tanh()`, and zero/negative objectives.
 - `.github/workflows/linear-release.yml` syncing GitHub commits/PRs/tags into Linear releases via `linear/linear-release-action@v0` (requires the `LINEAR_ACCESS_KEY` repository secret; no-ops until it is set) (GH-56).
 - SonarQube Cloud analysis workflow and `sonar-project.properties` (requires the `SONAR_TOKEN` repository secret; the scan is skipped on fork PRs and when the token is absent) (GH-56).
+- `CONTRIBUTING.md` with a neuromorphic relevance gate (five review
+  questions) so future changes preserve the crate's SNN/neuromodulatory
+  identity instead of drifting into a generic RL/ML framework (#59).
+- `.github/pull_request_template.md` with a scope checklist derived from
+  the relevance gate and a CI-matching verification checklist.
 
 ### Fixed
 

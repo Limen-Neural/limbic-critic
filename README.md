@@ -102,11 +102,14 @@ cargo test
 cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --check
 
-# Coverage (matches CI)
-cargo install cargo-llvm-cov
-cargo llvm-cov --all-features --lcov --output-path lcov.info
+# Coverage (the exact invocation the coverage workflow runs)
+cargo install cargo-llvm-cov cargo-nextest
+cargo llvm-cov nextest --all-features --profile ci --lcov --output-path lcov.info
 # HTML report: cargo llvm-cov --all-features --html
 ```
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) carries the authoritative pre-PR check
+list, including the `cargo package` content assertions that CI gates on.
 
 These development commands, hygiene improvements, test assertions, MSRV
 declaration, artifact cleanup, and Codecov integration were contributed by the
