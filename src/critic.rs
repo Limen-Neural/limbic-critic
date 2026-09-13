@@ -8,9 +8,11 @@
 //!
 //! - [`SimpleCritic`] — stateless clamp of the immediate objective and
 //!   optional environment signals.
-//! - [`TDCritic`] — stateful EMA of successive objective *deltas*
-//!   (`objective − prev_objective`), then `tanh`-mapped into dopamine /
-//!   acetylcholine. “TD” here means that delta, not `r + γV(s′) − V(s)`.
+//! - [`TDCritic`] — stateful mapper of successive objective *deltas*
+//!   (`objective − prev_objective`): dopamine is derived from the EMA of
+//!   those deltas; acetylcholine is derived from the raw absolute objective
+//!   delta before the EMA update. “TD” here means that delta, not
+//!   `r + γV(s′) − V(s)`.
 //!
 //! # Quick start
 //!
