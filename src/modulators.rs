@@ -33,10 +33,12 @@
 /// documentation and the critic-level docs for exact mappings.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct ModulatorVector {
-    /// Dopamine — reward / prediction-error drive.
+    /// Dopamine — shaped reward / objective-delta drive.
     ///
-    /// Semantic role: reinforces or weakens recent activity proportional to
-    /// how good (or how better-than-expected) the outcome was.
+    /// Semantic role: a bounded scalar that downstream plasticity can use
+    /// to reinforce or weaken recent activity. [`TDCritic`](crate::TDCritic)
+    /// produces a signed value from an EMA of objective deltas, not from a
+    /// learned prediction-error network.
     ///
     /// Ranges by critic:
     /// - [`SimpleCritic`](crate::SimpleCritic): clamped to **`[0.0, 1.0]`**

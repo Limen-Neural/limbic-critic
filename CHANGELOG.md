@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Pin Rust **1.98.1** in lockstep across `rust-version`, `rust-toolchain.toml`, and CI/coverage workflows.
+- Position the crate as a reward-shaping / modulator-mapping primitive (not a full actor–critic).
+- Cargo.toml publish metadata: authors, homepage, documentation, docs.rs, keywords (`rl` → `reward-shaping`).
+
+### Added
+
+- `package.exclude` for CI/agent-only paths and a `cargo package` CI job.
+- Focused unit tests for SimpleCritic clamps, TD dopamine sign, ACh `|td|.tanh()`, and zero/negative objectives.
 
 ### Fixed
 

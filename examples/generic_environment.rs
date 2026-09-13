@@ -4,7 +4,7 @@
 //!
 //! This demonstrates how any external system (trading bot, game, LLM training, etc.)
 //! can supply an objective value and stress/volatility signals, and receive
-//! neuromodulator concentrations for reward-modulated learning.
+//! a local `ModulatorVector` for reward shaping (not a full actor–critic).
 
 use limbic_critic::{Environment, SimpleCritic, TDCritic};
 

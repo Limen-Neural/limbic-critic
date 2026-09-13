@@ -4,12 +4,26 @@ version = "0.2.0"
 edition = "2024"
 # Keep in lockstep with rust-toolchain.toml and CI (`toolchain: "1.98.1"`).
 rust-version = "1.98.1"
-description = "Neuromodulatory reward shaping and RL critic functions for SNNs."
+description = "Reward-shaping / modulator-mapping primitive for SNNs (not a full actor-critic)."
 license = "MIT OR Apache-2.0"
+authors = ["Raul Montoya Cardenas <montoyaraul34@gmail.com>"]
 repository = "https://github.com/rmems/limbic-critic"
+homepage = "https://github.com/rmems/limbic-critic"
+documentation = "https://docs.rs/limbic-critic"
 readme = "README.md"
-keywords = ["snn", "neuromodulators", "rl", "reward"]
+keywords = ["snn", "neuromodulators", "reward-shaping", "reward"]
 categories = ["science", "simulation"]
+# crates.io surface: licenses, README, CHANGELOG, REUSE, sources, examples,
+# and BOUNDARY_MATRIX. Drop agent/CI/dev-only paths and the unused docs logo.
+exclude = [
+    "/.beads/",
+    "/.config/",
+    "/.github/",
+    "/.gitignore",
+    "/codecov.yml",
+    "/docs/logo.png",
+    "/rust-toolchain.toml",
+]
 
 [lib]
 name = "limbic_critic"
@@ -20,6 +34,10 @@ path = "src/lib.rs"
 [[example]]
 name = "generic_environment"
 path = "examples/generic_environment.rs"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [profile.release]
 opt-level = 3

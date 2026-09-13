@@ -4,25 +4,25 @@
 
 ## Purpose
 
-`limbic-critic` provides reward shaping and credit assignment mechanisms for SNN (Spiking Neural Network) training. It translates external objective signals from any environment into biological neuromodulator concentrations (dopamine, norepinephrine, acetylcholine, etc.).
+`limbic-critic` is a **reward-shaping / modulator-mapping primitive** for SNN systems. It translates external objective signals from any environment into local neuromodulator concentrations (dopamine, serotonin, acetylcholine, norepinephrine). It is **not** a full actor–critic, learned value function, or training framework.
 
 It is a **pure computation library** with no I/O, no hardware access, and no application-specific environment implementations.
 
 ## Owns
 
-- Reward shaping algorithms (temporal difference, advantage estimation)
-- Credit assignment mechanisms (eligibility traces, reward propagation)
+- Reward shaping maps (`SimpleCritic` clamp; `TDCritic` EMA of successive objective deltas)
 - `Environment` abstraction trait — the interface for any measurable external system
-- Reward normalization and scaling
 - Definition of local `ModulatorVector` output structure
 
 ## Does Not Own
 
+- Actor–critic loops, policy gradients, or learned value networks
 - Domain-specific reward calculations (mining efficiency, trading PnL, game scores)
 - Environment implementations (those belong in application crates or adapters)
 - I/O, networking, or hardware access
 - SNN model definitions or training loops
 - Neuromodulator dynamics or decay profiles (owned by upstream SNN crates)
+- `ModulatorVector` → `neuromod::NeuroModulators` conversion (bridge: `plasticity-lab`)
 
 ## Allowed Dependencies
 

@@ -7,9 +7,9 @@
 //! or any other process that can expose a scalar objective (and optional
 //! risk / stress / surprise signals).
 //!
-//! Critics such as [`SimpleCritic`](crate::SimpleCritic) and
+//! Reward-shaping maps such as [`SimpleCritic`](crate::SimpleCritic) and
 //! [`TDCritic`](crate::TDCritic) depend only on this trait, remaining
-//! agnostic to domain-specific details.
+//! agnostic to domain-specific details. They do not learn a value function.
 //!
 //! # Implementing `Environment`
 //!
@@ -19,7 +19,7 @@
 //!
 //! | Method | Default | Used by critics as |
 //! |--------|---------|--------------------|
-//! | [`objective`](Environment::objective) | *(required)* | reward / TD target |
+//! | [`objective`](Environment::objective) | *(required)* | shaped reward / TD delta source |
 //! | [`volatility`](Environment::volatility) | `0.0` | serotonin |
 //! | [`surprise`](Environment::surprise) | `0.0` | acetylcholine (`SimpleCritic` only) |
 //! | [`stress`](Environment::stress) | `0.0` | norepinephrine |
@@ -63,9 +63,10 @@
 pub trait Environment {
     /// Returns the current scalar objective value from the environment.
     ///
-    /// This is the primary metric the critic optimizes — profit-and-loss,
+    /// This is the primary scalar the shaper reads — profit-and-loss,
     /// cross-entropy loss (negated), game score, accuracy, or any other
-    /// performance indicator.
+    /// performance indicator. Critics do not optimize a policy; they only
+    /// map this observation into modulators.
     ///
     /// Prefer a stable, domain-normalized scale when possible. Critics also
     /// apply their own clamps / nonlinearities (`clamp`, `tanh`) so raw

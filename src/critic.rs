@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! RL critic and reward shaping.
+//! Reward-shaping critics: map an [`Environment`] observation into a
+//! [`ModulatorVector`].
 //!
-//! Translates an [`Environment`] observation into a
-//! [`ModulatorVector`] of neuromodulator
-//! concentrations. Two critics are provided:
+//! These types are **modulator-mapping primitives**, not a full actor–critic
+//! or a learned value function. Two shapers are provided:
 //!
-//! - [`SimpleCritic`] — stateless, maps the immediate objective and optional
-//!   environment signals.
-//! - [`TDCritic`] — stateful temporal-difference critic that tracks reward
-//!   improvement over time.
+//! - [`SimpleCritic`] — stateless clamp of the immediate objective and
+//!   optional environment signals.
+//! - [`TDCritic`] — stateful mapper of successive objective *deltas*
+//!   (`objective − prev_objective`): dopamine is derived from the EMA of
+//!   those deltas; acetylcholine is derived from the raw absolute objective
+//!   delta before the EMA update. “TD” here means that delta, not
+//!   `r + γV(s′) − V(s)`.
 //!
 //! # Quick start
 //!
@@ -50,13 +53,12 @@
 use crate::environment::Environment;
 use crate::modulators::ModulatorVector;
 
-/// A stateless critic that maps immediate environment signals to neuromodulators.
+/// A stateless reward-shaping map from the current observation to modulators.
 ///
-/// `SimpleCritic` stores no history. It therefore cannot compute temporal
-/// surprise on its own: acetylcholine is read directly from
-/// [`Environment::surprise`] and clamped to `[0.0, 1.0]`. Use [`TDCritic`]
-/// when acetylcholine should be derived from the absolute TD error
-/// (`abs(td_error).tanh()`).
+/// `SimpleCritic` stores no history and does not estimate a value function.
+/// Acetylcholine is read directly from [`Environment::surprise`] and clamped
+/// to `[0.0, 1.0]`. Use [`TDCritic`] when acetylcholine should be derived
+/// from the absolute objective delta (`abs(td_error).tanh()`).
 ///
 /// # Mapping
 ///
@@ -135,11 +137,12 @@ impl SimpleCritic {
     }
 }
 
-/// A stateful temporal-difference (TD) critic.
+/// A stateful reward-shaping map based on successive objective deltas.
 ///
-/// Tracks the previous objective and an exponential moving average (EMA) of
-/// the TD error so that dopamine reflects *change* in reward rather than
-/// absolute level. Acetylcholine is derived from surprise in the TD signal
+/// “TD” here is an exponential moving average (EMA) of
+/// `objective − prev_objective`, **not** a learned `V(s)` or actor–critic
+/// backup. Dopamine reflects *change* in the raw objective rather than
+/// absolute level. Acetylcholine is derived from surprise in that delta
 /// (`abs(td_error).tanh()`), not from [`Environment::surprise`].
 ///
 /// # Internal state
@@ -644,5 +647,102 @@ mod tests {
         let after = td.assess(&ConstEnv(f32::INFINITY));
         assert!(after.dopamine.is_nan());
         assert!(after.acetylcholine.is_nan());
+    }
+
+    #[test]
+    fn simple_critic_clamps_all_modulator_channels() {
+        let high = SimpleCritic::assess(&AuxEnv {
+            objective: 8.0,
+            surprise: 3.0,
+            volatility: 4.0,
+            stress: 5.0,
+        });
+        assert_eq!(high.dopamine, 1.0);
+        assert_eq!(high.acetylcholine, 1.0);
+        assert_eq!(high.serotonin, 1.0);
+        assert_eq!(high.norepinephrine, 1.0);
+
+        let low = SimpleCritic::assess(&AuxEnv {
+            objective: -2.0,
+            surprise: -0.5,
+            volatility: -1.0,
+            stress: -3.0,
+        });
+        assert_eq!(low.dopamine, 0.0);
+        assert_eq!(low.acetylcholine, 0.0);
+        assert_eq!(low.serotonin, 0.0);
+        assert_eq!(low.norepinephrine, 0.0);
+    }
+
+    #[test]
+    fn simple_critic_zero_objective_is_no_dopamine() {
+        let mods = SimpleCritic::assess(&AuxEnv {
+            objective: 0.0,
+            surprise: 0.25,
+            volatility: 0.4,
+            stress: 0.1,
+        });
+        assert_eq!(mods.dopamine, 0.0);
+        assert_eq!(mods.acetylcholine, 0.25);
+        assert_eq!(mods.serotonin, 0.4);
+        assert_eq!(mods.norepinephrine, 0.1);
+    }
+
+    #[test]
+    fn td_critic_dopamine_positive_on_objective_improvement() {
+        let mut td = TDCritic::new(0.5).expect("alpha in (0, 1]");
+        let baseline = td.assess(&ConstEnv(0.2));
+        let improved = td.assess(&ConstEnv(0.9));
+        assert!(
+            improved.dopamine > baseline.dopamine,
+            "improvement should raise dopamine ({baseline:?} -> {improved:?})"
+        );
+        assert!(improved.dopamine > 0.0);
+    }
+
+    #[test]
+    fn td_critic_acetylcholine_is_abs_td_tanh() {
+        let mut td = TDCritic::new(0.3).expect("alpha in (0, 1]");
+        // First assess seeds prev_objective = 0.4; td_error = 0.4.
+        let first = td.assess(&ConstEnv(0.4));
+        assert!((first.acetylcholine - 0.4f32.abs().tanh()).abs() < 1e-6);
+
+        // Drop to -0.6: td_error = -1.0; ACh = tanh(1.0), independent of sign.
+        let drop = td.assess(&ConstEnv(-0.6));
+        assert!((drop.acetylcholine - 1.0f32.tanh()).abs() < 1e-6);
+
+        let mut td_up = TDCritic::new(0.3).expect("alpha in (0, 1]");
+        let _ = td_up.assess(&ConstEnv(0.4));
+        let rise = td_up.assess(&ConstEnv(1.4)); // td_error = +1.0
+        assert!((rise.acetylcholine - drop.acetylcholine).abs() < 1e-6);
+    }
+
+    #[test]
+    fn td_critic_negative_and_zero_objectives() {
+        let mut td = TDCritic::new(1.0).expect("alpha in (0, 1]");
+        // alpha = 1: EMA equals the latest delta. First call: 0.0 - 0.0 = 0.
+        let zero = td.assess(&ConstEnv(0.0));
+        assert!((zero.dopamine - 0.0f32.tanh()).abs() < 1e-6);
+        assert!((zero.acetylcholine - 0.0f32.tanh()).abs() < 1e-6);
+
+        // Worsening into negative territory: td_error = -0.8.
+        let worse = td.assess(&ConstEnv(-0.8));
+        assert!(worse.dopamine < 0.0);
+        assert!((worse.dopamine - (-0.8f32).tanh()).abs() < 1e-6);
+        assert!((worse.acetylcholine - 0.8f32.tanh()).abs() < 1e-6);
+
+        // Recovery toward zero is still an improvement: td_error = +0.8.
+        let recover = td.assess(&ConstEnv(0.0));
+        assert!(recover.dopamine > 0.0);
+        assert!((recover.dopamine - 0.8f32.tanh()).abs() < 1e-6);
+    }
+
+    #[test]
+    fn td_critic_alpha_one_tracks_latest_delta_only() {
+        let mut td = TDCritic::new(1.0).expect("alpha in (0, 1]");
+        let _ = td.assess(&ConstEnv(2.0));
+        let second = td.assess(&ConstEnv(2.5));
+        // td_error = 0.5; alpha = 1 ⇒ ema = 0.5; dopamine = tanh(0.5).
+        assert!((second.dopamine - 0.5f32.tanh()).abs() < 1e-6);
     }
 }

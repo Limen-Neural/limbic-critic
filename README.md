@@ -2,23 +2,34 @@
 
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
-Neuromodulatory reward shaping and RL critic functions for SNNs.
+Reward-shaping and modulator-mapping primitive for SNNs: map an environment
+objective into a local `ModulatorVector`. This is **not** a full actor–critic,
+learned value function, or RL training framework.
 
 ## Mission
 
-This crate is a generalized engine that translates any external objective into
-biological neuromodulator concentrations. Its sole purpose is to compute the
-scalar values that feed into reward-modulated learning (e.g. `neuromod::rm_stdp`).
+`limbic-critic` turns a scalar observation (plus optional risk / stress /
+surprise signals) into constrained neuromodulator concentrations. Downstream
+plasticity rules such as `neuromod::rm_stdp` can consume those scalars — but
+this crate does **not** depend on `neuromod`. Convert `ModulatorVector` →
+`NeuroModulators` in [plasticity-lab](https://github.com/Limen-Neural/plasticity-lab)
+(the bridge) or in your application.
+
+**What “TD” means here:** `TDCritic` keeps an exponential
+moving average of *successive objective deltas* (`objective − prev_objective`).
+That EMA is `tanh`-mapped into dopamine; `|delta|.tanh()` becomes acetylcholine.
+It is **not** a learned `V(s)` / advantage estimator and does not run an
+actor–critic loop.
 
 **Architecture (condensed):**
 
 * **Environment trait** — abstract interface for any measurable external system
   (simulation score, trading PnL, LLM loss, etc.)
-* **Reward functions** — temporal difference error, curiosity-driven intrinsic
-  reward, moving-average baselines
-* **Modulator mapping** — maps mathematical errors into constrained `f32`
-  vectors for dopamine (reward), serotonin (risk/volatility), and norepinephrine
-  (stress/telemetry)
+* **Critics (shapers)** — `SimpleCritic` clamps the current observation;
+  `TDCritic` maps an EMA of objective deltas into signed dopamine
+* **Modulator mapping** — constrained `f32` fields for dopamine (shaped
+  reward / delta), serotonin (risk/volatility), acetylcholine (surprise /
+  |delta|), and norepinephrine (stress/telemetry)
 
 **MSRV:** Rust 1.98.1 (`rust-version` in `Cargo.toml`, `rust-toolchain.toml`, and CI).
 
@@ -48,7 +59,7 @@ cargo run --example generic_environment
 | Layer | Role | Crate / repo |
 |-------|------|----------------|
 | Application | Implements `Environment` for your domain | your app / adapters |
-| **limbic-critic** | Produces local `ModulatorVector` via `SimpleCritic` / `TDCritic` | [limbic-critic](https://github.com/rmems/limbic-critic) |
+| **limbic-critic** | Reward-shaping primitive: `SimpleCritic` / `TDCritic` → local `ModulatorVector` | [limbic-critic](https://github.com/rmems/limbic-critic) |
 | Bridge | Maps `ModulatorVector` → neuromod `NeuroModulators` | [plasticity-lab](https://github.com/Limen-Neural/plasticity-lab) |
 | Plasticity | Consumes modulators in `rm_stdp` | [neuromod](https://github.com/Limen-Neural/neuromod) |
 
@@ -63,16 +74,19 @@ See the full matrix: [`docs/BOUNDARY_MATRIX.md`](docs/BOUNDARY_MATRIX.md)
 
 **Owns:**
 
-* Reward shaping and credit-assignment algorithms
+* Reward shaping / modulator mapping (`SimpleCritic`, `TDCritic`)
 * The `Environment` trait
 * Local `ModulatorVector` output structure
 
 **Does not own:**
 
+* Actor–critic loops, policy gradients, or learned value networks
 * Training loops or SNN model definitions
 * Domain-specific rewards (mining, trading, games)
 * Environment implementations (belong in apps/adapters)
 * Neuromodulator dynamics / decay (upstream SNN crates)
+* Conversion of `ModulatorVector` → `neuromod::NeuroModulators` (bridge:
+  `plasticity-lab`)
 
 **Forbidden:**
 
