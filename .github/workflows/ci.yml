@@ -144,7 +144,6 @@ jobs:
             .github/workflows/ci.yml
             .beads/config.yaml
             .config/nextest.toml
-            qodana.yaml
             codecov.yml
             rust-toolchain.toml
             docs/logo.png

@@ -19,7 +19,6 @@ path = [
     "Cargo.toml",
     "Cargo.lock",
     "codecov.yml",
-    "qodana.yaml",
     "rust-toolchain.toml",
     ".gitignore",
     ".config/**",

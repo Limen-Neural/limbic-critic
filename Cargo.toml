@@ -22,7 +22,6 @@ exclude = [
     "/.gitignore",
     "/codecov.yml",
     "/docs/logo.png",
-    "/qodana.yaml",
     "/rust-toolchain.toml",
 ]
 
