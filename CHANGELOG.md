@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   forbidden). (GH#58)
 - `package.exclude` for CI/agent-only paths and a `cargo package` CI job.
 - Focused unit tests for SimpleCritic clamps, TD dopamine sign, ACh `|td|.tanh()`, and zero/negative objectives.
+- `.github/workflows/linear-release.yml` syncing GitHub commits/PRs/tags into Linear releases via `linear/linear-release-action@v0` (requires the `LINEAR_ACCESS_KEY` repository secret; no-ops until it is set) (GH-56).
 
 ### Fixed
 
