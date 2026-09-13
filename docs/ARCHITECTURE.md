@@ -36,7 +36,9 @@ SNN / neuromorphic runtime
 
 `limbic-critic` owns everything up to and including the `ModulatorVector`
 output. Everything downstream of that arrow — converting modulators into
-plasticity updates, and driving an SNN runtime — belongs to sibling crates.
+plasticity updates, and driving an SNN runtime — belongs outside this crate:
+in an application crate, a bridge such as `plasticity-lab`, or a sibling
+runtime crate.
 
 ## Owns
 
