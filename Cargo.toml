@@ -24,6 +24,7 @@ exclude = [
     "/codecov.yml",
     "/docs/logo.png",
     "/rust-toolchain.toml",
+    "/sonar-project.properties",
 ]
 
 [lib]
