@@ -36,6 +36,11 @@ jobs:
     if: github.repository == 'Limen-Neural/limbic-critic' && github.event.repository.fork == false
     permissions:
       contents: read
+    # The `secrets` context is NOT available in `if:` conditionals (neither
+    # job- nor step-level), so the secret is surfaced here as an env var and
+    # the step guards on `env`, which IS available in a step-level `if:`.
+    env:
+      LINEAR_ACCESS_KEY: ${{ secrets.LINEAR_ACCESS_KEY }}
     steps:
       # Pinned to full commit SHA for supply-chain security (corresponds to
       # actions/checkout@v4.4.0, matching the v4 tag GH-56's acceptance
@@ -53,10 +58,10 @@ jobs:
       # Pinned to full commit SHA for supply-chain security (corresponds to
       # linear/linear-release-action@v0, per GH-56 acceptance criteria).
       - name: Linear Release sync
-        if: ${{ secrets.LINEAR_ACCESS_KEY != '' }}
+        if: ${{ env.LINEAR_ACCESS_KEY != '' }}
         uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0
         with:
-          access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
+          access_key: ${{ env.LINEAR_ACCESS_KEY }}
           # command defaults to "sync". On a publish tag, pin the release to
           # that exact version per the action's scheduled-pipeline guidance;
           # on plain main pushes leave version unset for continuous sync.
