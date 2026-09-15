@@ -151,7 +151,8 @@ impl SimpleCritic {
     /// Reads every [`Environment`] channel this critic uses (`objective`,
     /// `volatility`, `surprise`, `stress`) and returns
     /// [`CriticError::NonFinite`] on the first non-finite value, in that
-    /// order. Extreme **finite** values are still clamped as in [`assess`]:
+    /// order. Extreme **finite** values are still clamped as in
+    /// [`assess`](Self::assess):
     /// positive objectives and auxiliary signals saturate at `1.0`;
     /// non-positive objectives yield `dopamine = 0.0`.
     ///
