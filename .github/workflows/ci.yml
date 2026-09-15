@@ -146,6 +146,7 @@ jobs:
             Cargo.toml
             src/lib.rs
             src/critic.rs
+            src/error.rs
             examples/generic_environment.rs
             docs/BOUNDARY_MATRIX.md
             REUSE.toml

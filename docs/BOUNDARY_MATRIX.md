@@ -11,6 +11,7 @@ It is a **pure computation library** with no I/O, no hardware access, and no app
 ## Owns
 
 - Reward shaping maps (`SimpleCritic` clamp; `TDCritic` EMA of successive objective deltas)
+- Checked assessment (`try_assess`) that rejects non-finite observations without committing temporal critic state
 - `Environment` abstraction trait — the interface for any measurable external system
 - Definition of local `ModulatorVector` output structure
 

@@ -86,6 +86,12 @@ A future critic may compute these fields differently, but a new field, or a
 field whose role diverges from this table, is a signal that the change is
 out of scope for this crate — see the future-feature rule above.
 
+`try_assess` on each critic is the checked mapping: it rejects non-finite
+environment observations (and, for `TDCritic`, NaN intermediates) with a
+typed [`CriticError`](../src/error.rs) and does not commit temporal state
+on failure. Successful fields are finite and lie in the ranges above.
+`assess` remains the IEEE-passthrough compatibility path.
+
 ## Dependency contract
 
 - **Semantic interop, not Cargo coupling.** Sibling Limen-Neural crates —
