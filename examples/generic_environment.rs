@@ -34,7 +34,7 @@ fn main() {
         stress: 0.1,
         volatility: 0.2,
     };
-    let mods = SimpleCritic::assess(&env);
+    let mods = SimpleCritic::try_assess(&env).expect("finite observation");
     println!(
         "SimpleCritic: dopamine={:.3} serotonin={:.3} acetylcholine={:.3} norepinephrine={:.3}",
         mods.dopamine, mods.serotonin, mods.acetylcholine, mods.norepinephrine
@@ -48,7 +48,7 @@ fn main() {
             stress: 0.0,
             volatility: 0.5,
         };
-        let m = td.assess(&e);
+        let m = td.try_assess(&e).expect("finite observation");
         println!("TD step obj={:.1} -> dopamine={:.3}", obj, m.dopamine);
     }
 }

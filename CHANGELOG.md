@@ -7,15 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- Pin Rust **1.98.1** in lockstep across `rust-version`, `rust-toolchain.toml`, and CI/coverage workflows.
-- Position the crate as a reward-shaping / modulator-mapping primitive (not a full actor–critic).
-- Cargo.toml publish metadata: authors, homepage, documentation, docs.rs, keywords (`rl` → `reward-shaping`).
-- Migrate self-referencing repository URLs (`Cargo.toml`, `REUSE.toml`, `README.md`, Codecov slug) from `rmems/limbic-critic` to the canonical `Limen-Neural/limbic-critic` home following the GitHub repository transfer (#60).
-
 ### Added
 
+- `CriticError` / `CriticField` / `NonFiniteKind` and a checked assessment
+  path: `SimpleCritic::try_assess` and `TDCritic::try_assess`. Non-finite
+  (NaN or ±∞) observations return a field-specific error. `TDCritic`
+  validates computed TD-error and EMA intermediates **before** committing
+  `prev_objective` or the delta EMA, so a failed call cannot poison later
+  valid output. Successful vectors are finite and lie in the documented
+  per-critic ranges. Extreme finite values still follow the existing
+  clamp / `tanh` policy (overflow-scale finite TD deltas saturate to
+  `±f32::MAX` rather than failing).
 - CI `Build & Test` job now matrices `ubuntu-latest`, `macos-latest`, and `windows-latest` (`fail-fast: false`); `cargo fmt --check` and `cargo doc` stay Linux-only, and `cargo package` stays on ubuntu-latest.
 - `docs/ARCHITECTURE.md` codifying the neuromorphic/SNN scope contract: the
   canonical `Environment → Critic → ModulatorVector → plasticity/SNN` flow,
@@ -32,6 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   identity instead of drifting into a generic RL/ML framework (#59).
 - `.github/pull_request_template.md` with a scope checklist derived from
   the relevance gate and a CI-matching verification checklist.
+
+### Changed
+
+- `SimpleCritic::assess` and `TDCritic::assess` keep their documented IEEE
+  `f32` passthrough for compatibility (NaN auxiliary signals stay NaN; a
+  non-finite `TDCritic` objective still poisons `prev_objective` / the
+  EMA). New callers — and any caller that must not absorb NaN into critic
+  state — should migrate to `try_assess`. The two paths agree on finite
+  observations.
+- Pin Rust **1.98.1** in lockstep across `rust-version`, `rust-toolchain.toml`, and CI/coverage workflows.
+- Position the crate as a reward-shaping / modulator-mapping primitive (not a full actor–critic).
+- Cargo.toml publish metadata: authors, homepage, documentation, docs.rs, keywords (`rl` → `reward-shaping`).
+- Migrate self-referencing repository URLs (`Cargo.toml`, `REUSE.toml`, `README.md`, Codecov slug) from `rmems/limbic-critic` to the canonical `Limen-Neural/limbic-critic` home following the GitHub repository transfer (#60).
 
 ### Fixed
 

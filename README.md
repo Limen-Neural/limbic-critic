@@ -26,7 +26,11 @@ actor–critic loop.
 * **Environment trait** — abstract interface for any measurable external system
   (simulation score, trading PnL, LLM loss, etc.)
 * **Critics (shapers)** — `SimpleCritic` clamps the current observation;
-  `TDCritic` maps an EMA of objective deltas into signed dopamine
+  `TDCritic` maps an EMA of objective deltas into signed dopamine.
+  `try_assess` is the poisoning-safe path: it returns `CriticError` on
+  NaN / ±∞ and does not update `TDCritic` state. `assess` keeps IEEE
+  `f32` passthrough for compatibility (a non-finite TD objective can
+  poison later steps).
 * **Modulator mapping** — constrained `f32` fields for dopamine (shaped
   reward / delta), serotonin (risk/volatility), acetylcholine (surprise /
   |delta|), and norepinephrine (stress/telemetry)
