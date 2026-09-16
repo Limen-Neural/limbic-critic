@@ -296,8 +296,14 @@ impl TDCritic {
     /// - `prev_objective = 0.0`
     /// - `ema_reward = 0.0`
     ///
-    /// The first [`assess`](Self::assess) / [`try_assess`](Self::try_assess)
-    /// call therefore treats the TD error as `objective - 0.0`.
+    /// The first [`assess`](Self::assess) call therefore treats the TD error
+    /// as `objective - 0.0` (and commits even when the observation is
+    /// non-finite).
+    ///
+    /// For [`try_assess`](Self::try_assess), that `objective - 0.0` baseline
+    /// applies only to the first **successful** call. A failed
+    /// `try_assess` returns before updating `prev_objective` or
+    /// `ema_reward`, so both remain `0.0` until a successful assessment.
     ///
     /// # Example
     ///
