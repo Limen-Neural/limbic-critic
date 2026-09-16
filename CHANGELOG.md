@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-09-16
 
 ### Added
 
@@ -25,9 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ranges, and the dependency contract (semantic interop with `neuromod` /
   `plasticity-lab`, zero runtime dependencies, sibling Cargo dependencies
   forbidden). (GH#58)
-- `package.exclude` for CI/agent-only paths and a `cargo package` CI job.
+- Closed-by-default crates.io package surface: root-anchored
+  `[package].include` allowlist plus a `cargo package` CI job that diffs
+  `cargo package --list` against the exact approved inventory (GH#72).
+  Unknown future local/agent/tool directories are excluded by
+  construction; `CONTRIBUTING.md` stays repo-only.
 - Focused unit tests for SimpleCritic clamps, TD dopamine sign, ACh `|td|.tanh()`, and zero/negative objectives.
-- `.github/workflows/linear-release.yml` modeled on synaptic-mesh: sync GitHub into Linear Releases **0.2.0** on main, complete on `vMAJOR.MINOR.PATCH` tags, serialize push/tag runs (`cancel-in-progress: false`). Uses org secret `LINEAR_ACCESS_KEY`. (GH-56)
+- `.github/workflows/linear-release.yml` modeled on synaptic-mesh: sync GitHub into Linear Releases **0.3.0** on main, complete on `vMAJOR.MINOR.PATCH` tags, serialize push/tag runs (`cancel-in-progress: false`). Uses org secret `LINEAR_ACCESS_KEY`. (GH-56)
 - SonarQube Cloud analysis workflow and `sonar-project.properties` (requires the `SONAR_TOKEN` repository secret; the scan is skipped on fork PRs and when the token is absent) (GH-56).
 - `CONTRIBUTING.md` with a neuromorphic relevance gate (five review
   questions) so future changes preserve the crate's SNN/neuromodulatory
