@@ -28,10 +28,10 @@ on:
         type: boolean
         default: true
       version:
-        description: Linear release version (defaults to 0.2.0)
+        description: Linear release version (defaults to 0.3.0)
         required: false
         type: string
-        default: "0.2.0"
+        default: "0.3.0"
 
 # Serialize main-push sync and tag complete against the same Linear release.
 # Do not cancel in-progress: a tag complete must not interleave with a push sync.
@@ -59,12 +59,12 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      # Push to main: hardcoded 0.2.0 (Linear In Progress), same active-train
-      # pattern as synaptic-mesh. After 0.2.0 is completed, bump this default
+      # Push to main: hardcoded 0.3.0 (Linear In Progress), same active-train
+      # pattern as synaptic-mesh. After 0.3.0 is completed, bump this default
       # (and workflow_dispatch default) when the next Linear release opens. Do
       # not invent dynamic version discovery.
-      # Tag: vMAJOR.MINOR.PATCH only (v0.2.0 → 0.2.0); anything else is empty
-      # and skips sync and complete. workflow_dispatch: version input, default 0.2.0.
+      # Tag: vMAJOR.MINOR.PATCH only (v0.3.0 → 0.3.0); anything else is empty
+      # and skips sync and complete. workflow_dispatch: version input, default 0.3.0.
       - name: Resolve Linear release version
         id: version
         shell: bash
@@ -91,7 +91,7 @@ jobs:
               echo "Ignoring empty workflow_dispatch version"
             fi
           else
-            version="0.2.0"
+            version="0.3.0"
           fi
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 

@@ -90,7 +90,7 @@ broken link or malformed code fence in `README.md` fails `cargo doc` under `-D w
 
 ## Release state
 
-The crate is **unpublished**; `0.2.0` is the pending first crates.io release. The repository was
+The crate is **unpublished**; `0.3.0` is the pending first crates.io release. The repository was
 recently transferred to `Limen-Neural/limbic-critic`, so treat any `rmems/limbic-critic` URL as
 stale. Keep `CHANGELOG.md` in Keep a Changelog form — one heading per category under
 `[Unreleased]`, in the order Added, Changed, Deprecated, Removed, Fixed, Security.
