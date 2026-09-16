@@ -13,18 +13,25 @@ documentation = "https://docs.rs/limbic-critic"
 readme = "README.md"
 keywords = ["snn", "neuromodulators", "reward-shaping", "reward"]
 categories = ["science", "simulation"]
-# crates.io surface: licenses, README, CHANGELOG, REUSE, sources, examples,
-# and BOUNDARY_MATRIX. Drop agent/CI/dev-only paths and the unused docs logo.
-exclude = [
-    "/.beads/",
-    "/CLAUDE.md",
-    "/.config/",
-    "/.github/",
-    "/.gitignore",
-    "/codecov.yml",
-    "/docs/logo.png",
-    "/rust-toolchain.toml",
-    "/sonar-project.properties",
+# crates.io surface (closed-by-default, GH#72): only the intended public
+# library artifact ships. Unknown future local/agent/tool directories are
+# excluded by construction. CONTRIBUTING.md, CLAUDE.md, CI, editor state,
+# and the unused docs logo stay repo-only.
+# NOTE: bare filenames match at any depth (gitignore semantics), so every
+# entry is root-anchored with a leading `/`. Without the anchor, e.g.
+# `README.md` would also match `.opencode/skills/.../README.md`.
+include = [
+    "/src/**",
+    "/examples/**",
+    "/LICENSE-MIT",
+    "/LICENSE-APACHE-2.0",
+    "/LICENSES/**",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/REUSE.toml",
+    "/docs/ARCHITECTURE.md",
+    "/docs/BOUNDARY_MATRIX.md",
+    "/Cargo.toml",
 ]
 
 [lib]

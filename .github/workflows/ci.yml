@@ -134,49 +134,36 @@ jobs:
       - name: cargo package
         run: cargo package --allow-dirty
 
+      # Closed-by-default (GH#72): exact-inventory diff. Any unknown future
+      # local/agent/tool directory fails the build by construction, unlike
+      # the old required/forbidden denylist which passed despite leaks.
       - name: Assert package contents
         run: |
           set -euo pipefail
           list="$(cargo package --list --allow-dirty)"
-          required=(
-            LICENSE-MIT
-            LICENSE-APACHE-2.0
-            README.md
+          expected=(
+            .cargo_vcs_info.json
             CHANGELOG.md
+            Cargo.lock
             Cargo.toml
-            src/lib.rs
-            src/critic.rs
-            src/error.rs
-            examples/generic_environment.rs
-            docs/BOUNDARY_MATRIX.md
+            Cargo.toml.orig
+            LICENSE-APACHE-2.0
+            LICENSE-MIT
+            LICENSES/Apache-2.0.txt
+            LICENSES/MIT.txt
+            README.md
             REUSE.toml
+            docs/ARCHITECTURE.md
+            docs/BOUNDARY_MATRIX.md
+            examples/generic_environment.rs
+            src/critic.rs
+            src/environment.rs
+            src/error.rs
+            src/lib.rs
+            src/modulators.rs
           )
-          forbidden=(
-            .github/workflows/ci.yml
-            .beads/config.yaml
-            CLAUDE.md
-            .config/nextest.toml
-            codecov.yml
-            rust-toolchain.toml
-            sonar-project.properties
-            docs/logo.png
-            .gitignore
-          )
-          missing=0
-          leaked=0
-          for f in "${required[@]}"; do
-            if ! printf '%s\n' "$list" | grep -Fxq "$f"; then
-              echo "::error::package is missing required path: $f"
-              missing=1
-            fi
-          done
-          for f in "${forbidden[@]}"; do
-            if printf '%s\n' "$list" | grep -Fxq "$f"; then
-              echo "::error::package unexpectedly includes: $f"
-              leaked=1
-            fi
-          done
-          if [ "$missing" -ne 0 ] || [ "$leaked" -ne 0 ]; then
+          if ! diff <(printf '%s\n' "${expected[@]}" | sort) <(printf '%s\n' "$list" | sort); then
+            echo "::error::package surface differs from the approved closed-by-default inventory"
             echo "---- package --list ----"
             printf '%s\n' "$list"
             exit 1
