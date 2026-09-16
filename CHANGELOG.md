@@ -42,7 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-finite `TDCritic` objective still poisons `prev_objective` / the
   EMA). New callers — and any caller that must not absorb NaN into critic
   state — should migrate to `try_assess`. The two paths agree on finite
-  observations.
+  observations when `TDCritic` state is already finite. After a
+  compatibility `assess` has stored a non-finite `prev_objective` or
+  EMA, a later finite `try_assess` returns `CriticError` rather than
+  matching `assess`.
 - Pin Rust **1.98.1** in lockstep across `rust-version`, `rust-toolchain.toml`, and CI/coverage workflows.
 - Position the crate as a reward-shaping / modulator-mapping primitive (not a full actor–critic).
 - Cargo.toml publish metadata: authors, homepage, documentation, docs.rs, keywords (`rl` → `reward-shaping`).

@@ -138,12 +138,14 @@ impl SimpleCritic {
     /// - `±∞` auxiliary signals clamp to the nearest bound (`0.0` or `1.0`).
     #[must_use]
     pub fn assess(env: &impl Environment) -> ModulatorVector {
-        simple_modulators(
-            env.objective(),
-            env.volatility(),
-            env.surprise(),
-            env.stress(),
-        )
+        // Preserve the pre-0.2 read order (objective, stress, volatility,
+        // surprise) so Environment impls with interior mutability keep the
+        // same side effects as the compatibility path.
+        let objective = env.objective();
+        let stress = env.stress();
+        let volatility = env.volatility();
+        let surprise = env.surprise();
+        simple_modulators(objective, volatility, surprise, stress)
     }
 
     /// Checked mapping from a finite observation to modulators.
@@ -371,7 +373,10 @@ impl TDCritic {
         // Update the EMA of the reward
         self.ema_reward = (1.0 - self.alpha) * self.ema_reward + self.alpha * td_error;
 
-        td_modulators(td_error, self.ema_reward, env.volatility(), env.stress())
+        // Preserve the pre-0.2 aux read order (stress, then volatility).
+        let stress = env.stress();
+        let volatility = env.volatility();
+        td_modulators(td_error, self.ema_reward, volatility, stress)
     }
 
     /// Checked mapping that rejects non-finite observations without
@@ -385,14 +390,16 @@ impl TDCritic {
     /// Intermediates are computed from the candidate observation **before**
     /// `prev_objective` or `ema_reward` are overwritten:
     ///
-    /// 1. `td_error = objective − prev_objective`. A NaN delta (only
-    ///    possible if prior compatibility [`assess`](Self::assess) already
-    ///    poisoned state) is rejected. An overflow `±∞` delta from extreme
-    ///    **finite** objectives is saturated to `±f32::MAX` so `tanh`
-    ///    still saturates acetylcholine / dopamine.
-    /// 2. Candidate EMA `(1 − alpha) * ema_reward + alpha * td_error`.
+    /// 1. Stored `prev_objective` and `ema_reward` must already be finite.
+    ///    A prior compatibility [`assess`](Self::assess) that stored NaN
+    ///    or ±∞ is rejected (`TdError` / `EmaReward`) without committing.
+    /// 2. `td_error = objective − prev_objective`. An overflow `±∞`
+    ///    delta from extreme **finite** objectives is saturated to
+    ///    `±f32::MAX` so `tanh` still saturates acetylcholine / dopamine.
+    ///    A NaN delta is rejected.
+    /// 3. Candidate EMA `(1 − alpha) * ema_reward + alpha * td_error`.
     ///    NaN is rejected; overflow `±∞` is saturated to `±f32::MAX`.
-    /// 3. Only then are `prev_objective` and `ema_reward` updated.
+    /// 4. Only then are `prev_objective` and `ema_reward` updated.
     ///
     /// Extreme finite auxiliary signals are clamped to `[0.0, 1.0]` as in
     /// [`assess`](Self::assess). On success dopamine is finite in
@@ -400,9 +407,9 @@ impl TDCritic {
     ///
     /// # Errors
     ///
-    /// Returns [`CriticError::NonFinite`] for a non-finite input channel or
-    /// a NaN intermediate. A failed call leaves `prev_objective` and
-    /// `ema_reward` unchanged.
+    /// Returns [`CriticError::NonFinite`] for a non-finite input channel,
+    /// already-poisoned temporal state, or a NaN intermediate. A failed
+    /// call leaves `prev_objective` and `ema_reward` unchanged.
     ///
     /// # Example
     ///
@@ -435,6 +442,10 @@ impl TDCritic {
         let objective = require_finite(env.objective(), CriticField::Objective)?;
         let volatility = require_finite(env.volatility(), CriticField::Volatility)?;
         let stress = require_finite(env.stress(), CriticField::Stress)?;
+        // Mixed-use with compatibility `assess`: do not saturate a
+        // previously stored ±∞ into ±f32::MAX and commit it.
+        require_finite(self.prev_objective, CriticField::TdError)?;
+        require_finite(self.ema_reward, CriticField::EmaReward)?;
 
         let td_error = shaped_td_error(objective, self.prev_objective)?;
         let ema_reward = shaped_ema(self.ema_reward, self.alpha, td_error)?;
@@ -499,6 +510,7 @@ fn is_valid_alpha(alpha: f32) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::RefCell;
 
     struct ConstEnv(f32);
 
@@ -1291,6 +1303,63 @@ mod tests {
         // Failed try_assess did not overwrite poisoned prev_objective.
         let still = td.try_assess(&ConstEnv(0.25)).unwrap_err();
         assert_eq!(still.field(), CriticField::TdError);
+    }
+
+    #[test]
+    fn try_assess_rejects_infinite_state_from_poisoned_assess() {
+        let mut td = TDCritic::new(1.0).expect("alpha in (0, 1]");
+        let _ = td.assess(&ConstEnv(f32::INFINITY));
+        let err = td.try_assess(&ConstEnv(0.5)).unwrap_err();
+        assert_eq!(err.field(), CriticField::TdError);
+        assert_eq!(err.kind(), NonFiniteKind::PositiveInfinity);
+        // Failed try_assess did not unstick the infinite prev_objective.
+        let still = td.try_assess(&ConstEnv(0.25)).unwrap_err();
+        assert_eq!(still.field(), CriticField::TdError);
+        assert_eq!(still.kind(), NonFiniteKind::PositiveInfinity);
+    }
+
+    #[test]
+    fn assess_reads_environment_channels_in_compatibility_order() {
+        struct OrderEnv {
+            calls: RefCell<Vec<&'static str>>,
+        }
+        impl Environment for OrderEnv {
+            fn objective(&self) -> f32 {
+                self.calls.borrow_mut().push("objective");
+                0.5
+            }
+            fn volatility(&self) -> f32 {
+                self.calls.borrow_mut().push("volatility");
+                0.0
+            }
+            fn surprise(&self) -> f32 {
+                self.calls.borrow_mut().push("surprise");
+                0.0
+            }
+            fn stress(&self) -> f32 {
+                self.calls.borrow_mut().push("stress");
+                0.0
+            }
+        }
+
+        let simple = OrderEnv {
+            calls: RefCell::new(Vec::new()),
+        };
+        let _ = SimpleCritic::assess(&simple);
+        assert_eq!(
+            *simple.calls.borrow(),
+            ["objective", "stress", "volatility", "surprise"]
+        );
+
+        let td_env = OrderEnv {
+            calls: RefCell::new(Vec::new()),
+        };
+        let mut td = TDCritic::new(0.1).expect("alpha in (0, 1]");
+        let _ = td.assess(&td_env);
+        assert_eq!(
+            *td_env.calls.borrow(),
+            ["objective", "stress", "volatility"]
+        );
     }
 
     #[test]
