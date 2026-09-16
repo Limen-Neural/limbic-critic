@@ -71,7 +71,10 @@ pub trait Environment {
     /// Prefer a stable, domain-normalized scale when possible. Critics also
     /// apply their own clamps / nonlinearities (`clamp`, `tanh`) so raw
     /// unnormalized values are accepted, but extreme magnitudes will saturate
-    /// the resulting modulators.
+    /// the resulting modulators. [`SimpleCritic::try_assess`](crate::SimpleCritic::try_assess)
+    /// and [`TDCritic::try_assess`](crate::TDCritic::try_assess) reject NaN
+    /// and ±∞ here with [`CriticError`](crate::CriticError); the compatibility
+    /// `assess` methods do not.
     ///
     /// # Used by
     ///

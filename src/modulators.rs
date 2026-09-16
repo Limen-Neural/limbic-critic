@@ -3,8 +3,10 @@
 //! Neuromodulator concentrations produced by a critic.
 //!
 //! A [`ModulatorVector`] is the primary output of
-//! [`SimpleCritic::assess`](crate::SimpleCritic::assess) and
-//! [`TDCritic::assess`](crate::TDCritic::assess). Each field maps to a
+//! [`SimpleCritic::assess`](crate::SimpleCritic::assess) /
+//! [`try_assess`](crate::SimpleCritic::try_assess) and
+//! [`TDCritic::assess`](crate::TDCritic::assess) /
+//! [`try_assess`](crate::TDCritic::try_assess). Each field maps to a
 //! classical neuromodulator role used for reward-modulated learning and
 //! plasticity control in SNN systems.
 //!
@@ -30,7 +32,9 @@
 /// gating, or other neuromodulatory pathways.
 ///
 /// Field ranges depend on which critic produced the vector; see each field's
-/// documentation and the critic-level docs for exact mappings.
+/// documentation and the critic-level docs for exact mappings. Vectors from
+/// `try_assess` are finite and inside those ranges; `assess` may yield NaN
+/// when given non-finite observations (IEEE passthrough).
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct ModulatorVector {
     /// Dopamine — shaped reward / objective-delta drive.
