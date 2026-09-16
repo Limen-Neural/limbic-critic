@@ -1,0 +1,29 @@
+CHANGELOG.md
+  s_22175ec47a1467::t_ebe69a71a2b224 8
+  s_22175ec47a1467::t_d6ee89614654c4 34
+  s_22175ec47a1467::t_4237ff6fad28dc 28-32
+CLAUDE.md
+  s_22175ec47a1467::t_06549634913bc4 93
+.github/workflows/linear-release.yml
+  s_22175ec47a1467::t_2d9ed044422cc7 31,34
+  s_22175ec47a1467::t_615f4a893041b3 94
+  s_22175ec47a1467::t_9c76c5fecadffe 62-63,66-67
+Cargo.toml
+  s_22175ec47a1467::t_2ff89bf0257d80 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6a971731094a2bada38b6da2975fba4c19eea20b",
+  "prompts": {},
+  "sessions": {
+    "s_22175ec47a1467": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f5752f4e9ffe2A5W4avYdGrA3g",
+        "model": "muse-spark-1.3-contributor"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}
