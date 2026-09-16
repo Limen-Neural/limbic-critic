@@ -1,0 +1,24 @@
+.gitignore
+  s_22175ec47a1467::t_6a53ce040e544c 36-38
+.github/workflows/ci.yml
+  s_22175ec47a1467::t_3d0a2f8eb6af68 137-139,144-145,147,149-158,160,162-163,165-166
+Cargo.toml
+  s_22175ec47a1467::t_e3f370c0d64fb5 20-22,24-34
+  s_22175ec47a1467::t_4c452f5405a49a 16-19,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3c85d32971dfc7d49998acda758e4b94043b8ace",
+  "prompts": {},
+  "sessions": {
+    "s_22175ec47a1467": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f5752f4e9ffe2A5W4avYdGrA3g",
+        "model": "muse-spark-1.3-contributor"
+      },
+      "human_author": "Raul Cardenas Montoya <montoyaraul34@gmail.com>"
+    }
+  }
+}
