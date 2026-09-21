@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Limen-Neural/limbic-critic/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Limen-Neural/limbic-critic/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Limen-Neural/limbic-critic/graph/badge.svg)](https://codecov.io/gh/Limen-Neural/limbic-critic)
-[![Maintainability](https://qlty.sh/gh/Limen-Neural/limbic-critic/maintainability.svg)](https://qlty.sh/gh/Limen-Neural/projects/limbic-critic)
+[![Maintainability](https://qlty.sh/gh/Limen-Neural/projects/limbic-critic/maintainability.svg)](https://qlty.sh/gh/Limen-Neural/projects/limbic-critic)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 Reward-shaping and modulator-mapping primitive for SNNs: map an environment
