@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Internal critic channel types (`Objective`, `Volatility`, `Surprise`,
+- Internal critic domain types (`Objective`, `Volatility`, `Surprise`,
   `Stress`, `TdError`, `EmaReward`, `Alpha`, and private observation
   structs) replace bare `f32` argument lists in `src/critic.rs`. Public
   signatures, clamp ranges, and IEEE `assess` / checked `try_assess`
