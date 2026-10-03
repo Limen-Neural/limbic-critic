@@ -1110,6 +1110,22 @@ mod tests {
         assert!(mods.norepinephrine.is_finite() && (0.0..=1.0).contains(&mods.norepinephrine));
     }
 
+    #[test]
+    fn td_error_rejects_nan_from_same_signed_infinities() {
+        let err = TdError::between(Objective(f32::INFINITY), Objective(f32::INFINITY)).unwrap_err();
+
+        assert_non_finite(err, CriticField::TdError, NonFiniteKind::Nan);
+    }
+
+    #[test]
+    fn ema_reward_rejects_nan_from_zero_times_infinity() {
+        let err = EmaReward(f32::INFINITY)
+            .updated(Alpha(1.0), TdError(0.0))
+            .unwrap_err();
+
+        assert_non_finite(err, CriticField::EmaReward, NonFiniteKind::Nan);
+    }
+
     fn non_finite_cases() -> [(f32, NonFiniteKind); 3] {
         [
             (f32::NAN, NonFiniteKind::Nan),
