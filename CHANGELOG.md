@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Internal critic channel types (`Objective`, `Volatility`, `Surprise`,
+  `Stress`, `TdError`, `EmaReward`, `Alpha`, and private observation
+  structs) replace bare `f32` argument lists in `src/critic.rs`. Public
+  signatures, clamp ranges, and IEEE `assess` / checked `try_assess`
+  behavior are unchanged. (LIM-1491)
+
 ## [0.3.0] - 2026-09-16
 
 ### Added

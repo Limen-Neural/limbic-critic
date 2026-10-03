@@ -72,6 +72,204 @@ use crate::environment::Environment;
 use crate::error::{CriticError, CriticField, NonFiniteKind, require_finite};
 use crate::modulators::ModulatorVector;
 
+/// Raw objective used by both critics. Private so the public `f32` contract
+/// stays put while CodeScene sees a domain argument instead of a bare float.
+#[derive(Debug, Clone, Copy)]
+struct Objective(f32);
+
+/// [`Environment::volatility`], mapped to serotonin.
+#[derive(Debug, Clone, Copy)]
+struct Volatility(f32);
+
+/// [`Environment::surprise`], mapped to acetylcholine by [`SimpleCritic`] only.
+#[derive(Debug, Clone, Copy)]
+struct Surprise(f32);
+
+/// [`Environment::stress`], mapped to norepinephrine.
+#[derive(Debug, Clone, Copy)]
+struct Stress(f32);
+
+/// Successive objective delta (`objective − prev_objective`). Not a learned
+/// `r + γV(s′) − V(s)` backup.
+#[derive(Debug, Clone, Copy)]
+struct TdError(f32);
+
+/// EMA of successive [`TdError`] values.
+#[derive(Debug, Clone, Copy)]
+struct EmaReward(f32);
+
+/// EMA learning rate, accepted only in `(0, 1]`.
+#[derive(Debug, Clone, Copy)]
+struct Alpha(f32);
+
+impl Objective {
+    fn raw(self) -> f32 {
+        self.0
+    }
+}
+
+impl Volatility {
+    fn raw(self) -> f32 {
+        self.0
+    }
+}
+
+impl Surprise {
+    fn raw(self) -> f32 {
+        self.0
+    }
+}
+
+impl Stress {
+    fn raw(self) -> f32 {
+        self.0
+    }
+}
+
+impl TdError {
+    fn raw(self) -> f32 {
+        self.0
+    }
+
+    /// `objective − prev_objective`. Reject NaN; saturate overflow ±∞ to `±f32::MAX`.
+    fn between(objective: Objective, prev_objective: Objective) -> Result<Self, CriticError> {
+        Ok(Self(saturate_or_reject(
+            objective.raw() - prev_objective.raw(),
+            CriticField::TdError,
+        )?))
+    }
+}
+
+impl EmaReward {
+    fn raw(self) -> f32 {
+        self.0
+    }
+
+    /// `(1 − alpha) * ema + alpha * td_error`. Reject NaN; saturate overflow ±∞.
+    fn updated(self, alpha: Alpha, td_error: TdError) -> Result<Self, CriticError> {
+        Ok(Self(saturate_or_reject(
+            (1.0 - alpha.raw()) * self.raw() + alpha.raw() * td_error.raw(),
+            CriticField::EmaReward,
+        )?))
+    }
+}
+
+impl Alpha {
+    fn raw(self) -> f32 {
+        self.0
+    }
+
+    /// `NaN` and infinities fail the comparison and are rejected.
+    fn validated(alpha: f32) -> Result<Self, InvalidAlpha> {
+        if alpha > 0.0 && alpha <= 1.0 {
+            Ok(Self(alpha))
+        } else {
+            Err(InvalidAlpha)
+        }
+    }
+}
+
+/// The four channels [`SimpleCritic`] reads, kept together so mapping
+/// helpers do not take a run of bare `f32`s.
+#[derive(Debug, Clone, Copy)]
+struct SimpleObservation {
+    objective: Objective,
+    volatility: Volatility,
+    surprise: Surprise,
+    stress: Stress,
+}
+
+impl SimpleObservation {
+    /// Compatibility read order: objective, stress, volatility, surprise.
+    /// Interior-mutable [`Environment`] impls depend on that sequence.
+    fn read_compat(env: &impl Environment) -> Self {
+        let objective = Objective(env.objective());
+        let stress = Stress(env.stress());
+        let volatility = Volatility(env.volatility());
+        let surprise = Surprise(env.surprise());
+        Self {
+            objective,
+            volatility,
+            surprise,
+            stress,
+        }
+    }
+
+    /// Checked read order: objective, volatility, surprise, stress.
+    fn try_read(env: &impl Environment) -> Result<Self, CriticError> {
+        let objective = Objective(require_finite(env.objective(), CriticField::Objective)?);
+        let volatility = Volatility(require_finite(env.volatility(), CriticField::Volatility)?);
+        let surprise = Surprise(require_finite(env.surprise(), CriticField::Surprise)?);
+        let stress = Stress(require_finite(env.stress(), CriticField::Stress)?);
+        Ok(Self {
+            objective,
+            volatility,
+            surprise,
+            stress,
+        })
+    }
+
+    fn into_modulators(self) -> ModulatorVector {
+        // Positive objective -> dopamine; non-positive (and NaN) -> nothing.
+        let dopamine = if self.objective.raw() > 0.0 {
+            self.objective.raw().clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+
+        ModulatorVector {
+            dopamine,
+            serotonin: self.volatility.raw().clamp(0.0, 1.0),
+            acetylcholine: self.surprise.raw().clamp(0.0, 1.0),
+            norepinephrine: self.stress.raw().clamp(0.0, 1.0),
+        }
+    }
+}
+
+/// Channels [`TDCritic`] reads. Surprise is absent: acetylcholine comes from
+/// the objective delta, matching the historical `assess` path.
+#[derive(Debug, Clone, Copy)]
+struct TdObservation {
+    objective: Objective,
+    volatility: Volatility,
+    stress: Stress,
+}
+
+impl TdObservation {
+    /// Compatibility read order: objective, then (after the EMA update in
+    /// the caller) stress, then volatility.
+    fn read_objective(env: &impl Environment) -> Objective {
+        Objective(env.objective())
+    }
+
+    fn read_aux_compat(env: &impl Environment) -> (Volatility, Stress) {
+        let stress = Stress(env.stress());
+        let volatility = Volatility(env.volatility());
+        (volatility, stress)
+    }
+
+    /// Checked read order: objective, volatility, stress.
+    fn try_read(env: &impl Environment) -> Result<Self, CriticError> {
+        let objective = Objective(require_finite(env.objective(), CriticField::Objective)?);
+        let volatility = Volatility(require_finite(env.volatility(), CriticField::Volatility)?);
+        let stress = Stress(require_finite(env.stress(), CriticField::Stress)?);
+        Ok(Self {
+            objective,
+            volatility,
+            stress,
+        })
+    }
+
+    fn modulators(self, td_error: TdError, ema_reward: EmaReward) -> ModulatorVector {
+        ModulatorVector {
+            dopamine: ema_reward.raw().tanh().clamp(-1.0, 1.0),
+            serotonin: self.volatility.raw().clamp(0.0, 1.0),
+            acetylcholine: td_error.raw().abs().tanh().clamp(0.0, 1.0),
+            norepinephrine: self.stress.raw().clamp(0.0, 1.0),
+        }
+    }
+}
+
 /// A stateless reward-shaping map from the current observation to modulators.
 ///
 /// `SimpleCritic` stores no history and does not estimate a value function.
@@ -141,11 +339,7 @@ impl SimpleCritic {
         // Preserve the pre-0.2 read order (objective, stress, volatility,
         // surprise) so Environment impls with interior mutability keep the
         // same side effects as the compatibility path.
-        let objective = env.objective();
-        let stress = env.stress();
-        let volatility = env.volatility();
-        let surprise = env.surprise();
-        simple_modulators(objective, volatility, surprise, stress)
+        SimpleObservation::read_compat(env).into_modulators()
     }
 
     /// Checked mapping from a finite observation to modulators.
@@ -184,33 +378,7 @@ impl SimpleCritic {
     /// assert_eq!(err.kind(), NonFiniteKind::PositiveInfinity);
     /// ```
     pub fn try_assess(env: &impl Environment) -> Result<ModulatorVector, CriticError> {
-        let objective = require_finite(env.objective(), CriticField::Objective)?;
-        let volatility = require_finite(env.volatility(), CriticField::Volatility)?;
-        let surprise = require_finite(env.surprise(), CriticField::Surprise)?;
-        let stress = require_finite(env.stress(), CriticField::Stress)?;
-        Ok(simple_modulators(objective, volatility, surprise, stress))
-    }
-}
-
-/// Stateless SimpleCritic mapping used by both `assess` and `try_assess`.
-fn simple_modulators(
-    objective: f32,
-    volatility: f32,
-    surprise: f32,
-    stress: f32,
-) -> ModulatorVector {
-    // Positive objective -> dopamine; non-positive (and NaN) -> nothing.
-    let dopamine = if objective > 0.0 {
-        objective.clamp(0.0, 1.0)
-    } else {
-        0.0
-    };
-
-    ModulatorVector {
-        dopamine,
-        serotonin: volatility.clamp(0.0, 1.0),
-        acetylcholine: surprise.clamp(0.0, 1.0),
-        norepinephrine: stress.clamp(0.0, 1.0),
+        Ok(SimpleObservation::try_read(env)?.into_modulators())
     }
 }
 
@@ -256,9 +424,9 @@ fn simple_modulators(
 /// assert!(step2.dopamine > step1.dopamine);
 /// ```
 pub struct TDCritic {
-    prev_objective: f32,
-    ema_reward: f32,
-    alpha: f32, // Learning rate for the EMA
+    prev_objective: Objective,
+    ema_reward: EmaReward,
+    alpha: Alpha,
 }
 
 /// `alpha` supplied to [`TDCritic::new`] was not in `(0, 1]`.
@@ -314,13 +482,10 @@ impl TDCritic {
     /// // critic is ready; call assess(&env) on each time step
     /// ```
     pub fn new(alpha: f32) -> Result<Self, InvalidAlpha> {
-        if !is_valid_alpha(alpha) {
-            return Err(InvalidAlpha);
-        }
         Ok(Self {
-            prev_objective: 0.0,
-            ema_reward: 0.0,
-            alpha,
+            prev_objective: Objective(0.0),
+            ema_reward: EmaReward(0.0),
+            alpha: Alpha::validated(alpha)?,
         })
     }
 
@@ -372,17 +537,22 @@ impl TDCritic {
     /// - `env` — environment providing the current objective (and optional
     ///   stress / volatility signals).
     pub fn assess(&mut self, env: &impl Environment) -> ModulatorVector {
-        let objective = env.objective();
-        let td_error = objective - self.prev_objective;
+        let objective = TdObservation::read_objective(env);
+        let td_error = objective.raw() - self.prev_objective.raw();
         self.prev_objective = objective;
 
         // Update the EMA of the reward
-        self.ema_reward = (1.0 - self.alpha) * self.ema_reward + self.alpha * td_error;
+        let alpha = self.alpha.raw();
+        self.ema_reward = EmaReward((1.0 - alpha) * self.ema_reward.raw() + alpha * td_error);
 
         // Preserve the pre-0.2 aux read order (stress, then volatility).
-        let stress = env.stress();
-        let volatility = env.volatility();
-        td_modulators(td_error, self.ema_reward, volatility, stress)
+        let (volatility, stress) = TdObservation::read_aux_compat(env);
+        TdObservation {
+            objective,
+            volatility,
+            stress,
+        }
+        .modulators(TdError(td_error), self.ema_reward)
     }
 
     /// Checked mapping that rejects non-finite observations without
@@ -445,17 +615,15 @@ impl TDCritic {
     /// assert_eq!(retry, expected);
     /// ```
     pub fn try_assess(&mut self, env: &impl Environment) -> Result<ModulatorVector, CriticError> {
-        let objective = require_finite(env.objective(), CriticField::Objective)?;
-        let volatility = require_finite(env.volatility(), CriticField::Volatility)?;
-        let stress = require_finite(env.stress(), CriticField::Stress)?;
+        let observation = TdObservation::try_read(env)?;
         // Mixed-use with compatibility `assess`: do not saturate a
         // previously stored ±∞ into ±f32::MAX and commit it.
-        require_finite(self.prev_objective, CriticField::TdError)?;
-        require_finite(self.ema_reward, CriticField::EmaReward)?;
+        require_finite(self.prev_objective.raw(), CriticField::TdError)?;
+        require_finite(self.ema_reward.raw(), CriticField::EmaReward)?;
 
-        let td_error = shaped_td_error(objective, self.prev_objective)?;
-        let ema_reward = shaped_ema(self.ema_reward, self.alpha, td_error)?;
-        let mods = td_modulators(td_error, ema_reward, volatility, stress);
+        let td_error = TdError::between(observation.objective, self.prev_objective)?;
+        let ema_reward = self.ema_reward.updated(self.alpha, td_error)?;
+        let mods = observation.modulators(td_error, ema_reward);
         debug_assert!(
             mods.dopamine.is_finite()
                 && mods.serotonin.is_finite()
@@ -463,33 +631,10 @@ impl TDCritic {
                 && mods.norepinephrine.is_finite()
         );
 
-        self.prev_objective = objective;
+        self.prev_objective = observation.objective;
         self.ema_reward = ema_reward;
         Ok(mods)
     }
-}
-
-/// Stateless TD mapping from a (possibly saturated) delta and EMA.
-fn td_modulators(td_error: f32, ema_reward: f32, volatility: f32, stress: f32) -> ModulatorVector {
-    ModulatorVector {
-        dopamine: ema_reward.tanh().clamp(-1.0, 1.0),
-        serotonin: volatility.clamp(0.0, 1.0),
-        acetylcholine: td_error.abs().tanh().clamp(0.0, 1.0),
-        norepinephrine: stress.clamp(0.0, 1.0),
-    }
-}
-
-/// Finite-input TD error: reject NaN, saturate overflow ±∞ to `±f32::MAX`.
-fn shaped_td_error(objective: f32, prev_objective: f32) -> Result<f32, CriticError> {
-    saturate_or_reject(objective - prev_objective, CriticField::TdError)
-}
-
-/// Finite-input EMA update: reject NaN, saturate overflow ±∞ to `±f32::MAX`.
-fn shaped_ema(prev_ema: f32, alpha: f32, td_error: f32) -> Result<f32, CriticError> {
-    saturate_or_reject(
-        (1.0 - alpha) * prev_ema + alpha * td_error,
-        CriticField::EmaReward,
-    )
 }
 
 /// Reject NaN; replace `±∞` with `±f32::MAX` so `tanh` still saturates.
@@ -504,13 +649,6 @@ fn saturate_or_reject(value: f32, field: CriticField) -> Result<f32, CriticError
         return Ok(value.signum() * f32::MAX);
     }
     Ok(value)
-}
-
-/// `alpha` is accepted only in the open-closed interval `(0, 1]`.
-///
-/// `NaN` and infinities fail the comparison and are rejected.
-fn is_valid_alpha(alpha: f32) -> bool {
-    alpha > 0.0 && alpha <= 1.0
 }
 
 #[cfg(test)]
