@@ -1,0 +1,4 @@
+{
+  "name": "limbic-critic",
+  "install": "bash .cursor/install.sh"
+}
