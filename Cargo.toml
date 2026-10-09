@@ -2,8 +2,8 @@
 name = "limbic-critic"
 version = "0.3.0"
 edition = "2024"
-# Keep in lockstep with rust-toolchain.toml and CI (`toolchain: "1.98.1"`).
-rust-version = "1.98.1"
+# Keep in lockstep with rust-toolchain.toml and CI (`toolchain: "1.99.0"`).
+rust-version = "1.99.0"
 description = "Reward-shaping / modulator-mapping primitive for SNNs (not a full actor-critic)."
 license = "MIT OR Apache-2.0"
 authors = ["Raul Cardenas Montoya <montoyaraul34@gmail.com>"]

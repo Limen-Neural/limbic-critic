@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   structs) replace bare `f32` argument lists in `src/critic.rs`. Public
   signatures, clamp ranges, and IEEE `assess` / checked `try_assess`
   behavior are unchanged. (LIM-1491)
+- Raised the pinned Rust toolchain / MSRV from **1.98.1** to **1.99.0**
+  in lockstep across `rust-version`, `rust-toolchain.toml`, and the
+  CI/coverage workflows. (LIM-1510)
 
 ## [0.3.0] - 2026-09-16
 
