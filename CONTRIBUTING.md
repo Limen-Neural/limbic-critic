@@ -73,7 +73,7 @@ cargo llvm-cov nextest --all-features --profile ci --lcov --output-path lcov.inf
 If you add a development-only file, check whether it belongs in `package.exclude`
 in `Cargo.toml` so it does not ship to crates.io.
 
-**MSRV:** Rust 1.98.1. `Cargo.toml` `rust-version`, `rust-toolchain.toml`,
+**MSRV:** Rust 1.99.0. `Cargo.toml` `rust-version`, `rust-toolchain.toml`,
 and both CI workflows (`ci.yml`, `coverage.yml`) are pinned to this version
 in lockstep — CI actively fails if any of them disagree, so update all four
 together if the MSRV ever changes.
