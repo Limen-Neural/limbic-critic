@@ -42,17 +42,17 @@ actor–critic loop.
 
 ## Getting Started
 
-Until published on crates.io, depend on the git repository:
+Add the crate from [crates.io](https://crates.io/crates/limbic-critic):
+
+```bash
+cargo add limbic-critic
+```
+
+To track unreleased changes instead, depend on the git repository:
 
 ```toml
 [dependencies]
 limbic-critic = { git = "https://github.com/Limen-Neural/limbic-critic" }
-```
-
-After publish:
-
-```bash
-cargo add limbic-critic
 ```
 
 Run the generic environment example:
