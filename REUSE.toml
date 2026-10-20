@@ -23,6 +23,7 @@ path = [
     ".gitignore",
     ".config/**",
     "sonar-project.properties",
+    ".deepsource.toml",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Limen-Neural contributors"
