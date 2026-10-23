@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `reuse` CI job running `fsfe/reuse-action` so REUSE/SPDX licensing
+  regressions fail the build. (RM-2060)
+
 ### Changed
 
 - Internal critic domain types (`Objective`, `Volatility`, `Surprise`,
