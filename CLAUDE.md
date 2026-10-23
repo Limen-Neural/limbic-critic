@@ -85,9 +85,8 @@ broken link or malformed code fence in `README.md` fails `cargo doc` under `-D w
 - **No sibling Cargo dependencies.** `neuromod`, `plasticity-lab`, and other Limen-Neural SNN
   crates are forbidden as dependencies — the relationship is semantic only. The
   `ModulatorVector` → `neuromod::NeuroModulators` conversion lives in `plasticity-lab`.
-<!-- REUSE-IgnoreStart -->
-- **REUSE compliance.** New Rust sources need `// SPDX-License-Identifier: MIT OR Apache-2.0` as
-<!-- REUSE-IgnoreEnd -->
+- **REUSE compliance.** New Rust sources need an `SPDX-License-Identifier` line (value
+  `MIT OR Apache-2.0`, as a `//` comment) as
   the first line; path annotations live in `REUSE.toml`.
 
 ## Release state
