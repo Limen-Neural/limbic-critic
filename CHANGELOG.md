@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   behavior are unchanged. (LIM-1491)
 - Raised the pinned Rust toolchain / MSRV from **1.98.1** to **1.99.0**
   in lockstep across `rust-version`, `rust-toolchain.toml`, and the
-  CI/coverage workflows. (LIM-1510)
+  CI/coverage workflows. (LIM-1510, GH#84)
 
 ## [0.3.0] - 2026-09-16
 
