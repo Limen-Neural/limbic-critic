@@ -38,7 +38,7 @@ actor–critic loop.
   reward / delta), serotonin (risk/volatility), acetylcholine (surprise /
   |delta|), and norepinephrine (stress/telemetry)
 
-**MSRV:** Rust 1.99.0 (`rust-version` in `Cargo.toml`, `rust-toolchain.toml`, and CI). CI Build & Test runs on Linux, macOS, and Windows.
+**MSRV:** Rust 1.85 (`rust-version` in `Cargo.toml`; CI tests it in the `msrv` job). CI Build & Test runs on Linux, macOS, and Windows.
 
 ## Getting Started
 
