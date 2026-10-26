@@ -133,6 +133,10 @@ jobs:
         id: msrv
         run: |
           rv=$(grep -m1 '^rust-version' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/' | tr -d '\r')
+          if [ -z "${rv:-}" ]; then
+            echo "ERROR: Could not read rust-version from Cargo.toml" >&2
+            exit 1
+          fi
           echo "version=$rv" >> "$GITHUB_OUTPUT"
 
       - name: Install Rust ${{ steps.msrv.outputs.version }}
