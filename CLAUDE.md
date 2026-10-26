@@ -78,7 +78,7 @@ broken link or malformed code fence in `README.md` fails `cargo doc` under `-D w
 
 - **Dev toolchain lockstep.** `rust-toolchain.toml` `channel` and the `toolchain:` string in
   **both** `ci.yml` and `coverage.yml` must be byte-identical (`1.99.0`).
-- **MSRV is separate.** `Cargo.toml` `rust-version` (`1.85`) is what the `msrv` CI job builds and
+- **MSRV is separate.** `Cargo.toml` `rust-version` is what the `msrv` CI job builds and
   tests on; the `MSRV:` lines in `README.md` and `CONTRIBUTING.md` must match it. One CI step
   checks both groups and fails on any disagreement.
 - **Package contents.** The `package` job in `ci.yml` asserts `cargo package --list` against an
