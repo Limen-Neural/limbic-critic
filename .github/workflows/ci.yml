@@ -139,6 +139,10 @@ jobs:
             echo "ERROR: Could not read rust-version from Cargo.toml" >&2
             exit 1
           fi
+          if ! [[ "$rv" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]]; then
+            echo "ERROR: rust-version '$rv' is not a plain X.Y[.Z] version" >&2
+            exit 1
+          fi
           echo "version=$rv" >> "$GITHUB_OUTPUT"
 
       - name: Install Rust ${{ steps.msrv.outputs.version }}
@@ -148,10 +152,14 @@ jobs:
 
       # Explicit +toolchain so rust-toolchain.toml (dev pin) does not override.
       - name: Build
-        run: cargo +${{ steps.msrv.outputs.version }} build --all-targets --all-features
+        env:
+          MSRV: ${{ steps.msrv.outputs.version }}
+        run: cargo "+$MSRV" build --all-targets --all-features
 
       - name: Test
-        run: cargo +${{ steps.msrv.outputs.version }} test --all-targets --all-features
+        env:
+          MSRV: ${{ steps.msrv.outputs.version }}
+        run: cargo "+$MSRV" test --all-targets --all-features
 
   package:
     name: cargo package
