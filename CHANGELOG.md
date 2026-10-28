@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Lowered the declared MSRV (`rust-version`) from **1.99.0** to **1.85**
+  (the edition-2024 floor), decoupling it from the 1.99.0 dev toolchain.
+  Non-breaking. CI gains an `msrv` job that builds and tests on the
+  `rust-version` value, and the pin check now verifies the dev toolchain
+  pins agree and that README/CONTRIBUTING state the same MSRV. (GH#83)
 - Internal critic domain types (`Objective`, `Volatility`, `Surprise`,
   `Stress`, `TdError`, `EmaReward`, `Alpha`, and private observation
   structs) replace bare `f32` argument lists in `src/critic.rs`. Public

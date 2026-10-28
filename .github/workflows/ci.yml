@@ -30,8 +30,9 @@ jobs:
 
       # Pinned to full commit SHA for dtolnay/rust-toolchain (corresponds to v1 tag, aligned with coverage.yml for consistency)
       # This ensures immutable build behavior and satisfies security scanners.
-      # Keep Cargo.toml rust-version, rust-toolchain.toml channel, and this
-      # job's toolchain: string identical (MSRV lockstep — GH-41).
+      # Dev toolchain: keep rust-toolchain.toml channel and the toolchain:
+      # strings in ci.yml and coverage.yml identical (GH-41). This is separate
+      # from the MSRV (Cargo.toml rust-version), which the `msrv` job tests.
       - name: Install Rust 1.99.0
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -39,7 +40,7 @@ jobs:
           components: clippy, rustfmt
 
       # shell: bash so the awk script runs on Windows runners too.
-      - name: Verify MSRV pins agree
+      - name: Verify toolchain pins and MSRV docs
         shell: bash
         run: |
           set -euo pipefail
@@ -64,22 +65,33 @@ jobs:
               }
             ' "$file"
           }
-          cargo_rv=$(grep -m1 '^rust-version' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/' | strip_cr)
           toolchain_ch=$(grep -m1 '^channel' rust-toolchain.toml | sed -E 's/.*"([^"]+)".*/\1/' | strip_cr)
-          ci_rv=$(extract_toolchain .github/workflows/ci.yml | tr -d '"' | strip_cr)
+          # every fixed dev pin in ci.yml, any quoting, including the package job;
+          # the msrv job's expression-based toolchain (${{ ... }}) is excluded
+          ci_rv=$(grep -E '^[[:space:]]*toolchain:' .github/workflows/ci.yml | grep -v '\${{' | sed -E "s/^[[:space:]]*toolchain:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]*$//; s/[\"']//g" | strip_cr | sort -u | paste -sd, - || true)
           cov_rv=$(extract_toolchain .github/workflows/coverage.yml | tr -d '"' | strip_cr)
           if [ -z "${ci_rv:-}" ] || [ -z "${cov_rv:-}" ]; then
             echo "ERROR: Failed to extract toolchain: from CI or coverage workflow" >&2
             exit 1
           fi
-          echo "Cargo.toml rust-version=$cargo_rv"
           echo "rust-toolchain.toml channel=$toolchain_ch"
           echo "ci.yml pin=$ci_rv"
           echo "coverage.yml pin=$cov_rv"
-          if [ "$cargo_rv" != "$toolchain_ch" ] || [ "$cargo_rv" != "$ci_rv" ] || [ "$cargo_rv" != "$cov_rv" ]; then
-            echo "ERROR: MSRV pins disagree (must be identical 1.99.0 lockstep)." >&2
+          if [ "$toolchain_ch" != "$ci_rv" ] || [ "$toolchain_ch" != "$cov_rv" ]; then
+            echo "ERROR: dev toolchain pins disagree (rust-toolchain.toml, ci.yml, coverage.yml)." >&2
             exit 1
           fi
+          # MSRV stated in the docs must match Cargo.toml rust-version
+          cargo_rv=$(grep -m1 '^rust-version' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/' | strip_cr)
+          echo "Cargo.toml rust-version=$cargo_rv"
+          for doc in README.md CONTRIBUTING.md; do
+            doc_rv=$(grep -m1 -oE '\*\*MSRV:\*\* Rust [0-9]+(\.[0-9]+)*' "$doc" | sed -E 's/.*Rust //' | strip_cr || true)
+            echo "$doc MSRV=${doc_rv:-<missing>}"
+            if [ "${doc_rv:-}" != "$cargo_rv" ]; then
+              echo "ERROR: $doc MSRV does not match Cargo.toml rust-version ($cargo_rv)." >&2
+              exit 1
+            fi
+          done
 
       # Swatinem/rust-cache is used instead of raw actions/cache + static key.
       # It handles Rust-specific caching (including git deps like neuromod) and
@@ -109,6 +121,46 @@ jobs:
       - name: Test
         run: cargo test --all-features
 
+  msrv:
+    name: MSRV build & test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Read MSRV from Cargo.toml
+        id: msrv
+        run: |
+          rv=$(grep -m1 '^rust-version' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/' | tr -d '\r')
+          if [ -z "${rv:-}" ]; then
+            echo "ERROR: Could not read rust-version from Cargo.toml" >&2
+            exit 1
+          fi
+          if ! [[ "$rv" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]]; then
+            echo "ERROR: rust-version '$rv' is not a plain X.Y[.Z] version" >&2
+            exit 1
+          fi
+          echo "version=$rv" >> "$GITHUB_OUTPUT"
+
+      - name: Install Rust ${{ steps.msrv.outputs.version }}
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+
+      # Explicit +toolchain so rust-toolchain.toml (dev pin) does not override.
+      - name: Build
+        env:
+          MSRV: ${{ steps.msrv.outputs.version }}
+        run: cargo "+$MSRV" build --all-targets --all-features
+
+      - name: Test
+        env:
+          MSRV: ${{ steps.msrv.outputs.version }}
+        run: cargo "+$MSRV" test --all-targets --all-features
+
   package:
     name: cargo package
     runs-on: ubuntu-latest
@@ -119,7 +171,7 @@ jobs:
         with:
           persist-credentials: false
 
-      # Keep in lockstep with rust-toolchain.toml / Cargo.toml rust-version (GH-41).
+      # Keep in lockstep with rust-toolchain.toml / coverage.yml (GH-41).
       - name: Install Rust 1.99.0
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:

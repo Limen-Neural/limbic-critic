@@ -2,8 +2,10 @@
 name = "limbic-critic"
 version = "0.3.0"
 edition = "2024"
-# Keep in lockstep with rust-toolchain.toml and CI (`toolchain: "1.99.0"`).
-rust-version = "1.99.0"
+# MSRV promised to users (edition 2024 floor). Independent of the dev
+# toolchain in rust-toolchain.toml; CI's `msrv` job builds and tests on this
+# value, and README.md / CONTRIBUTING.md must state the same one.
+rust-version = "1.85"
 description = "Reward-shaping / modulator-mapping primitive for SNNs (not a full actor-critic)."
 license = "MIT OR Apache-2.0"
 authors = ["Raul Cardenas Montoya <montoyaraul34@gmail.com>"]

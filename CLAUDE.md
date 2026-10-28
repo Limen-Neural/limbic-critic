@@ -76,9 +76,11 @@ broken link or malformed code fence in `README.md` fails `cargo doc` under `-D w
 
 ## Invariants CI enforces (these fail the build, not just lint)
 
-- **MSRV lockstep.** `Cargo.toml` `rust-version`, `rust-toolchain.toml` `channel`, and the
-  `toolchain:` string in **both** `ci.yml` and `coverage.yml` must be byte-identical (`1.99.0`).
-  A dedicated CI step parses all four and fails if any disagree. Change them together.
+- **Dev toolchain lockstep.** `rust-toolchain.toml` `channel` and the `toolchain:` string in
+  **both** `ci.yml` and `coverage.yml` must be byte-identical (`1.99.0`).
+- **MSRV is separate.** `Cargo.toml` `rust-version` is what the `msrv` CI job builds and
+  tests on; the `MSRV:` lines in `README.md` and `CONTRIBUTING.md` must match it. One CI step
+  checks both groups and fails on any disagreement.
 - **Package contents.** The `package` job in `ci.yml` asserts `cargo package --list` against an
   explicit required/forbidden path list. A new development-only file at the repo root will leak
   into the crate unless you add it to `package.exclude` in `Cargo.toml`.
