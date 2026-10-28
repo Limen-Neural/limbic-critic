@@ -72,6 +72,26 @@ use crate::environment::Environment;
 use crate::error::{CriticError, CriticField, NonFiniteKind, require_finite};
 use crate::modulators::ModulatorVector;
 
+/// `tanh` provider for the TD mappings.
+///
+/// `f32::tanh` is `std`-only (float transcendentals are not in `core` at
+/// MSRV 1.85), so `no_std` builds take the same math from the optional
+/// `libm` dependency instead. The two providers agree within the test
+/// suite's `1e-6` tolerance (see the parity test in `tests` below);
+/// building without either provider is a guided compile error at the
+/// crate root.
+#[cfg(feature = "std")]
+#[inline]
+fn tanh(x: f32) -> f32 {
+    x.tanh()
+}
+
+#[cfg(all(not(feature = "std"), feature = "libm"))]
+#[inline]
+fn tanh(x: f32) -> f32 {
+    libm::tanhf(x)
+}
+
 /// Raw objective used by both critics. Private so the public `f32` contract
 /// stays put while CodeScene sees a domain argument instead of a bare float.
 #[derive(Debug, Clone, Copy)]
@@ -262,9 +282,9 @@ impl TdObservation {
 
     fn modulators(self, td_error: TdError, ema_reward: EmaReward) -> ModulatorVector {
         ModulatorVector {
-            dopamine: ema_reward.raw().tanh().clamp(-1.0, 1.0),
+            dopamine: tanh(ema_reward.raw()).clamp(-1.0, 1.0),
             serotonin: self.volatility.raw().clamp(0.0, 1.0),
-            acetylcholine: td_error.raw().abs().tanh().clamp(0.0, 1.0),
+            acetylcholine: tanh(td_error.raw().abs()).clamp(0.0, 1.0),
             norepinephrine: self.stress.raw().clamp(0.0, 1.0),
         }
     }
@@ -437,13 +457,13 @@ pub struct TDCritic {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidAlpha;
 
-impl std::fmt::Display for InvalidAlpha {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for InvalidAlpha {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str("TDCritic alpha must be in (0, 1] (finite, greater than 0, at most 1)")
     }
 }
 
-impl std::error::Error for InvalidAlpha {}
+impl core::error::Error for InvalidAlpha {}
 
 impl TDCritic {
     /// Create a new TD critic with the given EMA learning rate.
@@ -1051,6 +1071,26 @@ mod tests {
         let _ = td_up.assess(&ConstEnv(0.4));
         let rise = td_up.assess(&ConstEnv(1.4)); // td_error = +1.0
         assert!((rise.acetylcholine - drop.acetylcholine).abs() < 1e-6);
+    }
+
+    #[cfg(feature = "libm")]
+    #[test]
+    fn libm_tanh_matches_std_within_suite_tolerance() {
+        // The no_std configuration (std off, libm on) maps dopamine and
+        // acetylcholine through libm::tanhf while the rest of this suite
+        // asserts against f32::tanh at 1e-6, so the two providers must
+        // agree at that tolerance everywhere the TD mappings can reach.
+        let grid = [
+            -8.0, -4.0, -1.0, -0.5, -0.25, -1e-3, 0.0, 1e-3, 0.25, 0.5, 1.0, 4.0, 8.0,
+        ];
+        for &x in &grid {
+            assert!((libm::tanhf(x) - x.tanh()).abs() < 1e-6, "mismatch at {x}");
+        }
+        // Saturation and degenerate inputs match exactly on both providers.
+        assert_eq!(libm::tanhf(f32::INFINITY), f32::INFINITY.tanh());
+        assert_eq!(libm::tanhf(f32::NEG_INFINITY), f32::NEG_INFINITY.tanh());
+        assert_eq!(libm::tanhf(0.0), 0.0);
+        assert!(libm::tanhf(f32::NAN).is_nan());
     }
 
     #[test]

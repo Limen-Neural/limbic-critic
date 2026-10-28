@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `reuse` CI job running `fsfe/reuse-action` so REUSE/SPDX licensing
   regressions fail the build. (RM-2060)
+- `no_std` support (RM-2068 / GH#89): the crate now builds without `std`
+  for embedded SNN targets. `std` becomes a default-on cargo feature, so
+  the published build is unchanged (same `f32::tanh` numerics); `no_std`
+  builds enable the new optional `libm` dependency for the same `tanh`
+  math (`f32::tanh` is not in `core` at MSRV 1.85). Error types now
+  implement `core::error::Error` (the trait `std::error` re-exports, so
+  existing `std` code is unaffected). Enabling neither feature is a
+  guided compile error. CI gains a `no_std` job: `thumbv7em-none-eabihf`
+  cross-build, `no_std`-configuration clippy, and the host test suite run
+  against the `libm` math path.
 
 ### Changed
 

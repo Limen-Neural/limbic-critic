@@ -40,7 +40,21 @@ include = [
 name = "limbic_critic"
 path = "src/lib.rs"
 
+# no_std surface (RM-2068 / GH#89). `std` (default) keeps the published
+# build's behavior identical, including `f32::tanh` from the system math
+# library. `libm` supplies `tanhf` for builds without `std` — `f32::tanh`
+# is not in `core` at the 1.85 MSRV. Enabling neither is a guided compile
+# error at the crate root; CI's `no_std` job builds thumbv7em-none-eabihf
+# with `libm` and lints/tests that configuration.
+[features]
+default = ["std"]
+std = []
+libm = ["dep:libm"]
+
 [dependencies]
+# Optional `tanh` provider for no_std targets only; never compiled for
+# default (`std`) users, so the required-dependency footprint stays zero.
+libm = { version = "0.2", optional = true }
 
 [[example]]
 name = "generic_environment"

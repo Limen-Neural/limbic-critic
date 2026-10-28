@@ -56,6 +56,12 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-features
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
 cargo build --all-features
+
+# no_std surface (RM-2068 / GH#89) — CI's `no_std` job runs these and also
+# cross-builds thumbv7em-none-eabihf (`rustup target add thumbv7em-none-eabihf`):
+cargo build --no-default-features --features libm
+cargo clippy --no-default-features --features libm -- -D warnings
+cargo test --no-default-features --features libm
 ```
 
 CI runs two more checks that are easy to miss locally:

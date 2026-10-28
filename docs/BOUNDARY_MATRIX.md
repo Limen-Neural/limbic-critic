@@ -28,7 +28,7 @@ It is a **pure computation library** with no I/O, no hardware access, and no app
 ## Allowed Dependencies
 
 - `serde` — optional serialization for checkpoint/debug
-- Math and statistics libraries (e.g., `nalgebra` for matrix operations)
+- Math and statistics libraries (e.g., `nalgebra` for matrix operations); the optional `libm` feature dependency supplies `tanh` in `no_std` builds (RM-2068)
 - `rand` — for stochastic reward shaping where needed
 
 ## Forbidden Dependencies
