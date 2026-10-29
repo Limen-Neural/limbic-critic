@@ -1092,6 +1092,8 @@ mod tests {
         for x in cases {
             if x.is_nan() {
                 assert!(libm::tanhf(x).is_nan());
+            } else if x.is_infinite() {
+                assert_eq!(libm::tanhf(x), x.tanh(), "mismatch at {x}");
             } else {
                 assert!((libm::tanhf(x) - x.tanh()).abs() < 1e-6, "mismatch at {x}");
             }
