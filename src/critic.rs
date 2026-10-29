@@ -1079,18 +1079,23 @@ mod tests {
         // The no_std configuration (std off, libm on) maps dopamine and
         // acetylcholine through libm::tanhf while the rest of this suite
         // asserts against f32::tanh at 1e-6, so the two providers must
-        // agree at that tolerance everywhere the TD mappings can reach.
+        // agree at that tolerance everywhere the TD mappings can reach —
+        // including exact saturation at ±∞ and NaN propagation. The
+        // cases run through one loop (CodeScene large-assertion gate).
         let grid = [
             -8.0, -4.0, -1.0, -0.5, -0.25, -1e-3, 0.0, 1e-3, 0.25, 0.5, 1.0, 4.0, 8.0,
         ];
-        for &x in &grid {
-            assert!((libm::tanhf(x) - x.tanh()).abs() < 1e-6, "mismatch at {x}");
+        let cases = grid
+            .iter()
+            .copied()
+            .chain([f32::INFINITY, f32::NEG_INFINITY, f32::NAN]);
+        for x in cases {
+            if x.is_nan() {
+                assert!(libm::tanhf(x).is_nan());
+            } else {
+                assert!((libm::tanhf(x) - x.tanh()).abs() < 1e-6, "mismatch at {x}");
+            }
         }
-        // Saturation and degenerate inputs match exactly on both providers.
-        assert_eq!(libm::tanhf(f32::INFINITY), f32::INFINITY.tanh());
-        assert_eq!(libm::tanhf(f32::NEG_INFINITY), f32::NEG_INFINITY.tanh());
-        assert_eq!(libm::tanhf(0.0), 0.0);
-        assert!(libm::tanhf(f32::NAN).is_nan());
     }
 
     #[test]
