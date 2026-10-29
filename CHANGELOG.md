@@ -13,14 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   regressions fail the build. (RM-2060)
 - `no_std` support (RM-2068 / GH#89): the crate now builds without `std`
   for embedded SNN targets. `std` becomes a default-on cargo feature, so
-  the published build is unchanged (same `f32::tanh` numerics); `no_std`
-  builds enable the new optional `libm` dependency for the same `tanh`
-  math (`f32::tanh` is not in `core` at MSRV 1.85). Error types now
-  implement `core::error::Error` (the trait `std::error` re-exports, so
-  existing `std` code is unaffected). Enabling neither feature is a
-  guided compile error. CI gains a `no_std` job: `thumbv7em-none-eabihf`
-  cross-build, `no_std`-configuration clippy, and the host test suite run
-  against the `libm` math path.
+  the default published build is unchanged (same `f32::tanh` numerics).
+  Migration note: a manifest with `default-features = false` was
+  previously a no-op (the crate had no features); such consumers must
+  now enable `std` explicitly or use `libm` on `no_std` targets — a
+  guided compile error explains the choice. `no_std` builds enable the
+  new optional `libm` dependency for the same `tanh` math (`f32::tanh`
+  is not in `core` at MSRV 1.85). Error types now implement
+  `core::error::Error` (the trait `std::error` re-exports, so existing
+  `std` code is unaffected). Enabling neither feature is a guided
+  compile error. CI gains a `no_std` job: `thumbv7em-none-eabihf`
+  cross-build, `no_std`-configuration clippy, and the host test suite
+  run against the `libm` math path; the `msrv` job additionally builds
+  and tests the `no_std` configuration on the declared MSRV.
 
 ### Changed
 

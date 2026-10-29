@@ -66,7 +66,8 @@ cargo run --example generic_environment
 `limbic-critic` builds without the standard library for embedded SNN
 targets (bare-metal Cortex-M / RISC-V MCUs and other `no_std` systems),
 while the default build stays exactly as published: same `std` linking,
-same system `tanh`, unchanged modulator numerics for every existing user.
+same system `tanh`, unchanged modulator numerics for every user keeping
+the defaults.
 
 `f32::tanh` (which `TDCritic` uses for dopamine and acetylcholine) has no
 `core` equivalent, so a `no_std` build enables the optional `libm`
