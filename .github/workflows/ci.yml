@@ -154,6 +154,7 @@ jobs:
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
+          targets: thumbv7em-none-eabihf
 
       # Explicit +toolchain so rust-toolchain.toml (dev pin) does not override.
       - name: Build
@@ -165,6 +166,19 @@ jobs:
         env:
           MSRV: ${{ steps.msrv.outputs.version }}
         run: cargo "+$MSRV" test --all-targets --all-features
+
+      # The no_std configuration compiles code the --all-features runs never
+      # touch (the std feature's tanh path wins there), so exercise it on the
+      # MSRV too (GH#89; cubic review on PR#97).
+      - name: Build no_std for bare-metal on MSRV (libm tanh)
+        env:
+          MSRV: ${{ steps.msrv.outputs.version }}
+        run: cargo "+$MSRV" build --no-default-features --features libm --target thumbv7em-none-eabihf
+
+      - name: Test the libm math path on host on MSRV
+        env:
+          MSRV: ${{ steps.msrv.outputs.version }}
+        run: cargo "+$MSRV" test --no-default-features --features libm
 
   # no_std surface (RM-2068 / GH#89): the validate job's --all-features
   # runs never compile the no_std configuration, so prove it separately —
