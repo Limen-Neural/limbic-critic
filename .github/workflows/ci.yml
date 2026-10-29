@@ -67,8 +67,13 @@ jobs:
           }
           toolchain_ch=$(grep -m1 '^channel' rust-toolchain.toml | sed -E 's/.*"([^"]+)".*/\1/' | strip_cr)
           # every fixed dev pin in ci.yml, any quoting, including the package job;
-          # the msrv job's expression-based toolchain (${{ ... }}) is excluded
-          ci_rv=$(grep -E '^[[:space:]]*toolchain:' .github/workflows/ci.yml | grep -v '\${{' | sed -E "s/^[[:space:]]*toolchain:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]*$//; s/[\"']//g" | strip_cr | sort -u | paste -sd, - || true)
+          # the msrv job's expression-based toolchain line is excluded by the
+          # grep -v filter below (its value is a GitHub expression, not a pin).
+          # NOTE: GitHub parses any complete dollar-double-brace expression
+          # found inside a run block and rejects the whole workflow file when
+          # its inner text is not a valid expression, so never spell one out
+          # in this block (GH#89 / PR#97 CI fix for the #96 regression).
+          ci_rv=$(grep -E '^[[:space:]]*toolchain:' .github/workflows/ci.yml | grep -v '\$[{][{]' | sed -E "s/^[[:space:]]*toolchain:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]*$//; s/[\"']//g" | strip_cr | sort -u | paste -sd, - || true)
           cov_rv=$(extract_toolchain .github/workflows/coverage.yml | tr -d '"' | strip_cr)
           if [ -z "${ci_rv:-}" ] || [ -z "${cov_rv:-}" ]; then
             echo "ERROR: Failed to extract toolchain: from CI or coverage workflow" >&2
