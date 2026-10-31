@@ -106,10 +106,14 @@ is already finite.
   must not, take a Cargo dependency on `neuromod`, `plasticity-lab`, or any
   other sibling SNN primitive crate. Integration happens one layer up, in
   application or bridge crates.
-- **Current dependency footprint:** zero runtime dependencies (see
-  `[dependencies]` in [`Cargo.toml`](../Cargo.toml)). Any proposal to add a
-  runtime dependency — sibling or otherwise — is a scope change and should be
-  weighed against this contract, not added incidentally.
+- **Current dependency footprint:** no required runtime dependencies (see
+  `[dependencies]` in [`Cargo.toml`](../Cargo.toml)). The single optional
+  dependency is `libm`, enabled only by the non-default `libm` feature to
+  supply `tanh` on `no_std` targets (RM-2068 / GH#89 — added after being
+  weighed against this contract). The default `std` build remains
+  dependency-free. Any proposal to add a further runtime dependency —
+  sibling or otherwise — is a scope change and should be weighed against
+  this contract, not added incidentally.
 
 ## Relationship to other documents
 

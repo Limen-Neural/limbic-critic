@@ -42,8 +42,8 @@ impl NonFiniteKind {
     }
 }
 
-impl std::fmt::Display for NonFiniteKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for NonFiniteKind {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Nan => f.write_str("NaN"),
             Self::PositiveInfinity => f.write_str("+inf"),
@@ -78,8 +78,8 @@ pub enum CriticField {
     EmaReward,
 }
 
-impl std::fmt::Display for CriticField {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for CriticField {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str(match self {
             Self::Objective => "objective",
             Self::Volatility => "volatility",
@@ -158,8 +158,8 @@ impl CriticError {
     }
 }
 
-impl std::fmt::Display for CriticError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for CriticError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match *self {
             Self::NonFinite { field, kind } => {
                 write!(f, "non-finite {field} ({kind})")
@@ -168,7 +168,7 @@ impl std::fmt::Display for CriticError {
     }
 }
 
-impl std::error::Error for CriticError {}
+impl core::error::Error for CriticError {}
 
 /// Reject `value` unless it is finite.
 pub(crate) fn require_finite(value: f32, field: CriticField) -> Result<f32, CriticError> {

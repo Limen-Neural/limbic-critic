@@ -61,6 +61,37 @@ Run the generic environment example:
 cargo run --example generic_environment
 ```
 
+## `no_std` support
+
+`limbic-critic` builds without the standard library for embedded SNN
+targets (bare-metal Cortex-M / RISC-V MCUs and other `no_std` systems),
+while the default build stays exactly as published: same `std` linking,
+same system `tanh`, unchanged modulator numerics for every user keeping
+the defaults.
+
+`f32::tanh` (which `TDCritic` uses for dopamine and acetylcholine) has no
+`core` equivalent, so a `no_std` build enables the optional `libm`
+dependency as its math provider. Error types implement
+`core::error::Error` (stable since Rust 1.81), so `CriticError` and
+`InvalidAlpha` behave identically with and without `std`.
+
+| Feature | Default | Role |
+|---------|---------|------|
+| `std`   | on      | `f32::tanh` from the system math library |
+| `libm`  | off     | `libm::tanhf` for builds without `std` |
+
+For a `no_std` target, disable the default features and enable `libm`:
+
+```bash
+cargo add limbic-critic --no-default-features --features libm
+```
+
+Enabling neither feature is a guided compile error. CI keeps this surface
+honest on every push and PR: it cross-builds `thumbv7em-none-eabihf`, lints
+the `no_std` configuration, and runs the full host test suite against the
+`libm` math path, so both `tanh` providers stay numerically
+indistinguishable at the suite's `1e-6` tolerance.
+
 ## Ecosystem
 
 | Layer | Role | Crate / repo |
