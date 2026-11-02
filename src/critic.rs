@@ -443,11 +443,58 @@ impl SimpleCritic {
 /// // Improvement produces a higher (more positive) dopamine signal.
 /// assert!(step2.dopamine > step1.dopamine);
 /// ```
+///
+/// # Observability and reset
+///
+/// The internal state is read-only through [`alpha`](Self::alpha),
+/// [`prev_objective`](Self::prev_objective), and
+/// [`ema_reward`](Self::ema_reward), and the [`Debug`](core::fmt::Debug)
+/// output prints the same raw values. [`reset`](Self::reset) restores the
+/// state produced by [`TDCritic::new`] (keeping `alpha`), which is the
+/// explicit escape from a NaN / ±∞ state poisoned by the compatibility
+/// [`assess`](Self::assess) path.
+///
+/// ```rust
+/// use limbic_critic::{Environment, TDCritic};
+///
+/// struct StubEnv(f32);
+/// impl Environment for StubEnv {
+///     fn objective(&self) -> f32 { self.0 }
+/// }
+///
+/// let mut td = TDCritic::new(0.5).expect("alpha in (0, 1]");
+/// let _ = td.assess(&StubEnv(f32::NAN));
+/// assert!(td.ema_reward().is_nan()); // poisoned: visible, not silent
+///
+/// td.reset();
+/// assert_eq!(td.prev_objective(), 0.0);
+/// assert_eq!(td.ema_reward(), 0.0);
+/// assert_eq!(td.alpha(), 0.5);
+/// assert!(td.assess(&StubEnv(1.0)).dopamine.is_finite());
+/// ```
 pub struct TDCritic {
     prev_objective: Objective,
     ema_reward: EmaReward,
     alpha: Alpha,
 }
+
+/// Prints the raw `f32` state (`prev_objective`, `ema_reward`, `alpha`) —
+/// the same values the accessors return — so a poisoned critic shows up
+/// as `NaN` / `inf` in logs.
+impl core::fmt::Debug for TDCritic {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("TDCritic")
+            .field("prev_objective", &self.prev_objective.raw())
+            .field("ema_reward", &self.ema_reward.raw())
+            .field("alpha", &self.alpha.raw())
+            .finish()
+    }
+}
+
+/// `prev_objective` on construction and after [`TDCritic::reset`].
+const INITIAL_PREV_OBJECTIVE: f32 = 0.0;
+/// `ema_reward` on construction and after [`TDCritic::reset`].
+const INITIAL_EMA_REWARD: f32 = 0.0;
 
 /// `alpha` supplied to [`TDCritic::new`] was not in `(0, 1]`.
 ///
@@ -503,10 +550,57 @@ impl TDCritic {
     /// ```
     pub fn new(alpha: f32) -> Result<Self, InvalidAlpha> {
         Ok(Self {
-            prev_objective: Objective(0.0),
-            ema_reward: EmaReward(0.0),
+            prev_objective: Objective(INITIAL_PREV_OBJECTIVE),
+            ema_reward: EmaReward(INITIAL_EMA_REWARD),
             alpha: Alpha::validated(alpha)?,
         })
+    }
+
+    /// EMA learning rate this critic was constructed with.
+    ///
+    /// Always finite and in `(0, 1]` (enforced by [`TDCritic::new`]);
+    /// unchanged by [`assess`](Self::assess), [`try_assess`](Self::try_assess),
+    /// and [`reset`](Self::reset).
+    #[must_use]
+    pub fn alpha(&self) -> f32 {
+        self.alpha.raw()
+    }
+
+    /// Objective stored by the last committed assessment, used as the
+    /// baseline for the next TD error (`objective − prev_objective`).
+    ///
+    /// `0.0` after [`TDCritic::new`] or [`reset`](Self::reset). The
+    /// compatibility [`assess`](Self::assess) path stores whatever the
+    /// environment returned, so this can be NaN or ±∞; a failed
+    /// [`try_assess`](Self::try_assess) leaves it unchanged.
+    #[must_use]
+    pub fn prev_objective(&self) -> f32 {
+        self.prev_objective.raw()
+    }
+
+    /// Current EMA of successive TD errors — the value whose `tanh` became
+    /// dopamine on the last committed assessment.
+    ///
+    /// `0.0` after [`TDCritic::new`] or [`reset`](Self::reset). It can be
+    /// NaN or ±∞ only after non-finite input reached the compatibility
+    /// [`assess`](Self::assess) path; [`try_assess`](Self::try_assess)
+    /// commits only finite values.
+    #[must_use]
+    pub fn ema_reward(&self) -> f32 {
+        self.ema_reward.raw()
+    }
+
+    /// Restore the initial state produced by [`TDCritic::new`]:
+    /// `prev_objective = 0.0` and `ema_reward = 0.0`. `alpha` is kept.
+    ///
+    /// This is the explicit recovery path from the absorbing NaN / ±∞ state
+    /// that non-finite input can leave behind on the compatibility
+    /// [`assess`](Self::assess) path. After a reset the critic behaves
+    /// exactly like a freshly constructed one with the same `alpha`, so
+    /// the next assessment's TD error is `objective − 0.0`.
+    pub fn reset(&mut self) {
+        self.prev_objective = Objective(INITIAL_PREV_OBJECTIVE);
+        self.ema_reward = EmaReward(INITIAL_EMA_REWARD);
     }
 
     /// Calculate neuromodulator concentrations from the TD error.
@@ -538,7 +632,10 @@ impl TDCritic {
     ///   leave **NaN** dopamine and acetylcholine (NaN comparisons are false).
     ///   That NaN is stored in `prev_objective` and folded into `ema_reward`,
     ///   so the state is **absorbing**: every later `assess`, even with a
-    ///   finite objective, yields NaN TD / dopamine / ACh. There is no reset.
+    ///   finite objective, yields NaN TD / dopamine / ACh, until
+    ///   [`reset`](Self::reset) restores the initial state. Use
+    ///   [`prev_objective`](Self::prev_objective) /
+    ///   [`ema_reward`](Self::ema_reward) to detect a poisoned critic.
     /// - A **±∞** objective on a finite EMA produces an infinite TD error.
     ///   `tanh` saturates (`tanh(∞) = 1`, `tanh(-∞) = -1`), so that step's
     ///   dopamine is `±1.0` and acetylcholine is `1.0`.
@@ -1636,6 +1733,122 @@ mod tests {
             let simple = SimpleCritic::try_assess(&env).unwrap();
             assert_simple_bounds(simple);
         }
+    }
+
+    #[test]
+    fn td_critic_accessors_report_initial_state() {
+        let td = TDCritic::new(0.25).expect("alpha in (0, 1]");
+        assert_eq!(td.alpha(), 0.25);
+        assert_eq!(td.prev_objective(), 0.0);
+        assert_eq!(td.ema_reward(), 0.0);
+    }
+
+    #[test]
+    fn td_critic_accessors_report_values_used_by_assess() {
+        let alpha = 0.3;
+        let mut td = TDCritic::new(alpha).expect("alpha in (0, 1]");
+        let _ = td.assess(&ConstEnv(0.4));
+        assert_eq!(td.prev_objective(), 0.4);
+        assert_eq!(td.ema_reward(), alpha * 0.4);
+
+        // The accessors expose exactly what the next step consumes: the TD
+        // error is computed from prev_objective, dopamine from the new EMA.
+        let prev = td.prev_objective();
+        let ema = td.ema_reward();
+        let next = td.assess(&ConstEnv(-0.6));
+        let td_error = -0.6 - prev;
+        let expected_ema = (1.0 - td.alpha()) * ema + td.alpha() * td_error;
+        assert_eq!(td.ema_reward(), expected_ema);
+        assert_eq!(td.prev_objective(), -0.6);
+        // 1e-6: the libm tanh path is checked against f32::tanh here.
+        assert!((next.dopamine - expected_ema.tanh()).abs() < 1e-6);
+        assert!((next.acetylcholine - td_error.abs().tanh()).abs() < 1e-6);
+        assert_eq!(td.alpha(), alpha);
+    }
+
+    #[test]
+    fn td_critic_accessors_track_try_assess_commits_only() {
+        let mut td = TDCritic::new(0.5).expect("alpha in (0, 1]");
+        let mods = td.try_assess(&ConstEnv(0.8)).unwrap();
+        assert_eq!(td.prev_objective(), 0.8);
+        assert_eq!(td.ema_reward(), 0.4);
+        assert!((mods.dopamine - td.ema_reward().tanh()).abs() < 1e-6);
+
+        let _ = td.try_assess(&ConstEnv(f32::NAN)).unwrap_err();
+        assert_eq!(td.prev_objective(), 0.8);
+        assert_eq!(td.ema_reward(), 0.4);
+    }
+
+    #[test]
+    fn td_critic_accessors_expose_poisoned_state() {
+        let mut td = TDCritic::new(0.1).expect("alpha in (0, 1]");
+        let _ = td.assess(&ConstEnv(f32::NAN));
+        assert!(td.prev_objective().is_nan());
+        assert!(td.ema_reward().is_nan());
+        assert_eq!(td.alpha(), 0.1);
+
+        let mut td = TDCritic::new(1.0).expect("alpha in (0, 1]");
+        let _ = td.assess(&ConstEnv(f32::INFINITY));
+        assert_eq!(td.prev_objective(), f32::INFINITY);
+        assert_eq!(td.ema_reward(), f32::INFINITY);
+    }
+
+    #[test]
+    fn td_critic_reset_returns_to_initial_state() {
+        let mut td = TDCritic::new(0.2).expect("alpha in (0, 1]");
+        for objective in [0.3, 1.1, -0.4] {
+            let _ = td.assess(&ConstEnv(objective));
+        }
+        assert_ne!(td.prev_objective(), 0.0);
+        assert_ne!(td.ema_reward(), 0.0);
+
+        td.reset();
+        assert_eq!(td.prev_objective(), 0.0);
+        assert_eq!(td.ema_reward(), 0.0);
+        assert_eq!(td.alpha(), 0.2);
+
+        // Behaviorally identical to a fresh critic with the same alpha.
+        let mut fresh = TDCritic::new(0.2).expect("alpha in (0, 1]");
+        for objective in [0.5, 0.9, -0.1] {
+            let env = ConstEnv(objective);
+            assert_eq!(td.assess(&env), fresh.assess(&env));
+        }
+    }
+
+    #[test]
+    fn td_critic_reset_escapes_absorbing_nonfinite_state() {
+        for poison in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let mut td = TDCritic::new(0.4).expect("alpha in (0, 1]");
+            let _ = td.assess(&ConstEnv(poison));
+            // Still absorbing before reset (both paths).
+            assert!(td.try_assess(&ConstEnv(0.5)).is_err());
+
+            td.reset();
+            let mut fresh = TDCritic::new(0.4).expect("alpha in (0, 1]");
+            let recovered = td.try_assess(&ConstEnv(0.5)).unwrap();
+            assert_eq!(recovered, fresh.try_assess(&ConstEnv(0.5)).unwrap());
+            assert_td_bounds(recovered);
+            assert_eq!(td.assess(&ConstEnv(0.7)), fresh.assess(&ConstEnv(0.7)));
+        }
+    }
+
+    #[test]
+    fn td_critic_debug_reports_raw_state() {
+        let mut td = TDCritic::new(0.5).expect("alpha in (0, 1]");
+        assert_eq!(
+            format!("{td:?}"),
+            "TDCritic { prev_objective: 0.0, ema_reward: 0.0, alpha: 0.5 }"
+        );
+        let _ = td.assess(&ConstEnv(1.0));
+        assert_eq!(
+            format!("{td:?}"),
+            "TDCritic { prev_objective: 1.0, ema_reward: 0.5, alpha: 0.5 }"
+        );
+        let _ = td.assess(&ConstEnv(f32::NAN));
+        assert_eq!(
+            format!("{td:?}"),
+            "TDCritic { prev_objective: NaN, ema_reward: NaN, alpha: 0.5 }"
+        );
     }
 
     #[test]

@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cross-build, `no_std`-configuration clippy, and the host test suite
   run against the `libm` math path; the `msrv` job additionally builds
   and tests the `no_std` configuration on the declared MSRV.
+- `TDCritic` observability and reset path (GH#85): read-only
+  `alpha()`, `prev_objective()`, and `ema_reward()` accessors; a manual
+  `Debug` impl printing the same raw state; and `reset()`, which restores
+  the `TDCritic::new` state (`prev_objective = 0.0`, `ema_reward = 0.0`,
+  `alpha` kept). `reset()` is the explicit escape from the absorbing
+  NaN / ±∞ state the compatibility `assess` path can store. Additive;
+  existing behavior is unchanged.
 
 ### Changed
 
