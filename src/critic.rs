@@ -565,11 +565,11 @@ impl TDCritic {
     ///
     /// let mut td = TDCritic::new(0.2).expect("alpha in (0, 1]");
     /// let _ = td.assess(&NanEnv);
-    /// assert!(td.prev_objective().is_nan());
     /// td.reset();
-    /// assert_eq!(td.prev_objective(), 0.0);
-    /// assert_eq!(td.ema_reward(), 0.0);
-    /// assert_eq!(td.alpha(), 0.2);
+    /// assert_eq!(
+    ///     (td.alpha(), td.prev_objective(), td.ema_reward()),
+    ///     (0.2, 0.0, 0.0)
+    /// );
     /// ```
     pub fn reset(&mut self) {
         self.prev_objective = Objective(0.0);
@@ -1066,31 +1066,61 @@ mod tests {
     }
 
     #[test]
-    fn td_critic_getters_track_state_and_reset_clears_nan() {
-        let mut td = TDCritic::new(0.25).expect("alpha in (0, 1]");
-        assert_eq!(td.alpha(), 0.25);
-        assert_eq!(td.prev_objective(), 0.0);
-        assert_eq!(td.ema_reward(), 0.0);
-        assert!(format!("{td:?}").contains("alpha: 0.25"));
+    fn td_critic_getters_report_initial_state() {
+        let td = TDCritic::new(0.25).expect("alpha in (0, 1]");
+        assert_eq!(
+            (td.alpha(), td.prev_objective(), td.ema_reward()),
+            (0.25, 0.0, 0.0)
+        );
+    }
 
+    #[test]
+    fn td_critic_debug_prints_raw_state() {
+        let td = TDCritic::new(0.25).expect("alpha in (0, 1]");
+        assert_eq!(
+            format!("{td:?}"),
+            "TDCritic { prev_objective: 0.0, ema_reward: 0.0, alpha: 0.25 }"
+        );
+    }
+
+    #[test]
+    fn td_critic_getters_follow_a_finite_assessment() {
+        let mut td = TDCritic::new(0.25).expect("alpha in (0, 1]");
         let _ = td.assess(&ConstEnv(1.0));
         assert_eq!(td.prev_objective(), 1.0);
-        let ema_after_step = td.ema_reward();
-        assert!(ema_after_step.is_finite() && ema_after_step > 0.0);
+        assert!(td.ema_reward().is_finite() && td.ema_reward() > 0.0);
+    }
 
+    #[test]
+    fn td_critic_reset_clears_nan_history_and_keeps_alpha() {
+        let mut td = TDCritic::new(0.25).expect("alpha in (0, 1]");
+        let _ = td.assess(&ConstEnv(f32::NAN));
+        td.reset();
+        assert_eq!(
+            (td.alpha(), td.prev_objective(), td.ema_reward()),
+            (0.25, 0.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn td_critic_assess_nan_is_visible_on_getters() {
+        let mut td = TDCritic::new(0.25).expect("alpha in (0, 1]");
         let _ = td.assess(&ConstEnv(f32::NAN));
         assert!(td.prev_objective().is_nan());
         assert!(td.ema_reward().is_nan());
+    }
 
-        td.reset();
-        assert_eq!(td.alpha(), 0.25);
-        assert_eq!(td.prev_objective(), 0.0);
-        assert_eq!(td.ema_reward(), 0.0);
+    #[test]
+    fn td_critic_reset_matches_a_fresh_critic() {
+        let mut poisoned = TDCritic::new(0.25).expect("alpha in (0, 1]");
+        let _ = poisoned.assess(&ConstEnv(f32::NAN));
+        poisoned.reset();
 
         let mut fresh = TDCritic::new(0.25).expect("alpha in (0, 1]");
-        let recovered = td.assess(&ConstEnv(0.4));
-        let baseline = fresh.assess(&ConstEnv(0.4));
-        assert_eq!(recovered, baseline);
+        assert_eq!(
+            poisoned.assess(&ConstEnv(0.4)),
+            fresh.assess(&ConstEnv(0.4))
+        );
     }
 
     #[test]
