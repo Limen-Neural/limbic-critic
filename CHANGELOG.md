@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `TDCritic` observability and recovery (RM-2065): read-only
+  `alpha()`, `prev_objective()`, and `ema_reward()`; a `Debug` impl that
+  prints those raw values; and `reset()`, which restores
+  `prev_objective` and `ema_reward` to `0.0` while keeping `alpha`.
+  `reset()` is the escape from the absorbing NaN / ±∞ state the
+  compatibility `assess` path can store. Additive; existing `assess` /
+  `try_assess` numerics are unchanged.
 - `reuse` CI job running `fsfe/reuse-action` so REUSE/SPDX licensing
   regressions fail the build. (RM-2060)
 - `no_std` support (RM-2068 / GH#89): the crate now builds without `std`
