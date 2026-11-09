@@ -33,7 +33,8 @@ actor–critic loop.
   `try_assess` is the poisoning-safe path: it returns `CriticError` on
   NaN / ±∞ and does not update `TDCritic` state. `assess` keeps IEEE
   `f32` passthrough for compatibility (a non-finite TD objective can
-  poison later steps).
+  poison later steps until `TDCritic::reset`; `prev_objective` and
+  `ema_reward` make that stored state visible).
 * **Modulator mapping** — constrained `f32` fields for dopamine (shaped
   reward / delta), serotonin (risk/volatility), acetylcholine (surprise /
   |delta|), and norepinephrine (stress/telemetry)
