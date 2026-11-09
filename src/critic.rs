@@ -565,6 +565,7 @@ impl TDCritic {
     ///
     /// let mut td = TDCritic::new(0.2).expect("alpha in (0, 1]");
     /// let _ = td.assess(&NanEnv);
+    /// assert!(td.prev_objective().is_nan());
     /// td.reset();
     /// assert_eq!(
     ///     (td.alpha(), td.prev_objective(), td.ema_reward()),
