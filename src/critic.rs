@@ -465,6 +465,16 @@ impl core::fmt::Display for InvalidAlpha {
 
 impl core::error::Error for InvalidAlpha {}
 
+impl core::fmt::Debug for TDCritic {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("TDCritic")
+            .field("prev_objective", &self.prev_objective.raw())
+            .field("ema_reward", &self.ema_reward.raw())
+            .field("alpha", &self.alpha.raw())
+            .finish()
+    }
+}
+
 impl TDCritic {
     /// Create a new TD critic with the given EMA learning rate.
     ///
@@ -509,6 +519,38 @@ impl TDCritic {
         })
     }
 
+    /// Returns the configured EMA learning rate.
+    #[must_use]
+    pub fn alpha(&self) -> f32 {
+        self.alpha.raw()
+    }
+
+    /// Returns the objective from the previous assessment.
+    ///
+    /// This may be non-finite when the compatibility [`assess`](Self::assess)
+    /// path observed a non-finite objective.
+    #[must_use]
+    pub fn prev_objective(&self) -> f32 {
+        self.prev_objective.raw()
+    }
+
+    /// Returns the current EMA of objective deltas.
+    ///
+    /// This may be non-finite after compatibility assessment of invalid data.
+    #[must_use]
+    pub fn ema_reward(&self) -> f32 {
+        self.ema_reward.raw()
+    }
+
+    /// Restore the initial state while preserving the configured `alpha`.
+    ///
+    /// This provides recovery after the compatibility [`assess`](Self::assess)
+    /// path has stored non-finite state.
+    pub fn reset(&mut self) {
+        self.prev_objective = Objective(0.0);
+        self.ema_reward = EmaReward(0.0);
+    }
+
     /// Calculate neuromodulator concentrations from the TD error.
     ///
     /// # Algorithm
@@ -538,7 +580,8 @@ impl TDCritic {
     ///   leave **NaN** dopamine and acetylcholine (NaN comparisons are false).
     ///   That NaN is stored in `prev_objective` and folded into `ema_reward`,
     ///   so the state is **absorbing**: every later `assess`, even with a
-    ///   finite objective, yields NaN TD / dopamine / ACh. There is no reset.
+    ///   finite objective, yields NaN TD / dopamine / ACh. Call
+    ///   [`reset`](Self::reset) to restore the initial state.
     /// - A **±∞** objective on a finite EMA produces an infinite TD error.
     ///   `tanh` saturates (`tanh(∞) = 1`, `tanh(-∞) = -1`), so that step's
     ///   dopamine is `±1.0` and acetylcholine is `1.0`.
