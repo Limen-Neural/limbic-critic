@@ -36,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Marked `ModulatorVector` `#[non_exhaustive]` and added
+  `ModulatorVector::new(dopamine, serotonin, acetylcholine,
+  norepinephrine)` for explicit construction (RM-2064 / GH#86). This is a
+  breaking API change targeted at 0.4.0: downstream struct literals,
+  functional-update syntax, and exhaustive struct patterns must migrate to
+  `new` or `Default` plus public-field assignment. Existing fields, `Default`,
+  and critic outputs are unchanged.
 - Lowered the declared MSRV (`rust-version`) from **1.99.0** to **1.85**
   (the edition-2024 floor), decoupling it from the 1.99.0 dev toolchain.
   Non-breaking. CI gains an `msrv` job that builds and tests on the
