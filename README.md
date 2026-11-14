@@ -18,6 +18,23 @@ this crate does **not** depend on `neuromod`. Convert `ModulatorVector` →
 `NeuroModulators` in [plasticity-lab](https://github.com/Limen-Neural/plasticity-lab)
 (the bridge) or in your application.
 
+## API stability
+
+`limbic-critic` is pre-1.0 and follows Cargo's SemVer conventions: patch
+releases (`0.x.y`) are compatible fixes, while breaking changes require a
+minor release (`0.x.0`).
+
+`ModulatorVector` is `#[non_exhaustive]`. Construct it with
+`ModulatorVector::new(...)` for the four canonical channels or
+`ModulatorVector::default()` plus public-field assignment; do not rely on
+struct literals or functional-update syntax, and use `..` in struct patterns.
+`new` is intended to keep its four-channel signature as fields are added;
+future fields use documented defaults. New fields may be added without
+breaking those construction paths, but removing or renaming fields, or
+changing a field's meaning or range, remains breaking. `CriticError`,
+`CriticField`, and `NonFiniteKind` are also `#[non_exhaustive]`, so match
+them with a wildcard arm.
+
 **What “TD” means here:** `TDCritic` keeps an exponential
 moving average of *successive objective deltas* (`objective − prev_objective`).
 That EMA is `tanh`-mapped into dopamine; `|delta|.tanh()` becomes acetylcholine.

@@ -15,12 +15,7 @@
 //! ```rust
 //! use limbic_critic::ModulatorVector;
 //!
-//! let mods = ModulatorVector {
-//!     dopamine: 0.8,
-//!     serotonin: 0.2,
-//!     acetylcholine: 0.1,
-//!     norepinephrine: 0.0,
-//! };
+//! let mods = ModulatorVector::new(0.8, 0.2, 0.1, 0.0);
 //! assert!(mods.dopamine >= 0.0);
 //! ```
 
@@ -35,7 +30,13 @@
 /// documentation and the critic-level docs for exact mappings. Vectors from
 /// `try_assess` are finite and inside those ranges; `assess` may yield NaN
 /// when given non-finite observations (IEEE passthrough).
+///
+/// The struct is `#[non_exhaustive]`: downstream crates cannot use struct
+/// literals or functional-update syntax, and struct patterns must include
+/// `..`. Construct it with [`new`](Self::new) or [`Default`], then assign
+/// public fields when a partial update is clearer.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[non_exhaustive]
 pub struct ModulatorVector {
     /// Dopamine — shaped reward / objective-delta drive.
     ///
@@ -78,4 +79,48 @@ pub struct ModulatorVector {
     /// [`Environment::stress`](crate::Environment::stress) into this field
     /// and clamp it to **`[0.0, 1.0]`**.
     pub norepinephrine: f32,
+}
+
+impl ModulatorVector {
+    /// Create a vector with explicit values for the four canonical channels.
+    ///
+    /// This is the preferred construction path outside this crate because the
+    /// struct is `#[non_exhaustive]`. The four arguments cover the canonical
+    /// channels and the signature is intended to remain stable: future fields
+    /// are added with documented defaults rather than by changing this
+    /// constructor. [`Default`] remains available for a zeroed vector;
+    /// callers may assign public fields afterward.
+    #[must_use]
+    pub const fn new(
+        dopamine: f32,
+        serotonin: f32,
+        acetylcholine: f32,
+        norepinephrine: f32,
+    ) -> Self {
+        Self {
+            dopamine,
+            serotonin,
+            acetylcholine,
+            norepinephrine,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ModulatorVector;
+
+    #[test]
+    fn new_sets_canonical_fields() {
+        let vector = ModulatorVector::new(0.8, 0.2, 0.1, 0.0);
+        assert_eq!(
+            vector,
+            ModulatorVector {
+                dopamine: 0.8,
+                serotonin: 0.2,
+                acetylcholine: 0.1,
+                norepinephrine: 0.0,
+            }
+        );
+    }
 }
