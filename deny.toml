@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2026 Limen-Neural contributors
+# SPDX-License-Identifier: MIT OR Apache-2.0
+#
+# cargo-deny supply-chain policy (RM-2066 / GH#87), enforced by
+# .github/workflows/audit.yml on every PR, on main, and weekly.
+# https://embarkstudios.github.io/cargo-deny/
+#
+# The default build has zero runtime dependencies; the optional `libm`
+# (no_std `tanh`) is the only dependency today. Every new dependency must
+# pass this policy before it can land.
+
+[graph]
+# Vet optional dependencies too (`libm` is behind a feature).
+all-features = true
+
+[advisories]
+# Known RustSec vulnerabilities always fail (cargo-deny >= 0.18 has no
+# switch to downgrade them); add an `ignore` entry with a reason only for a
+# reviewed, non-applicable advisory.
+unmaintained = "all"
+yanked = "deny"
+ignore = []
+
+[licenses]
+# Only the project's own licenses. Widen this list in a reviewed PR when a
+# new dependency needs another permissive license.
+allow = ["MIT", "Apache-2.0"]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
