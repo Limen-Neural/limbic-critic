@@ -32,9 +32,9 @@
 /// when given non-finite observations (IEEE passthrough).
 ///
 /// The struct is `#[non_exhaustive]`: downstream crates cannot use struct
-/// literals, functional-update syntax, or exhaustive patterns. Construct it
-/// with [`new`](Self::new) or [`Default`], then assign public fields when a
-/// partial update is clearer.
+/// literals or functional-update syntax, and struct patterns must include
+/// `..`. Construct it with [`new`](Self::new) or [`Default`], then assign
+/// public fields when a partial update is clearer.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[non_exhaustive]
 pub struct ModulatorVector {
@@ -85,8 +85,11 @@ impl ModulatorVector {
     /// Create a vector with explicit values for the four canonical channels.
     ///
     /// This is the preferred construction path outside this crate because the
-    /// struct is `#[non_exhaustive]`. [`Default`] remains available for a
-    /// zeroed vector; callers may assign public fields afterward.
+    /// struct is `#[non_exhaustive]`. The four arguments cover the canonical
+    /// channels and the signature is intended to remain stable: future fields
+    /// are added with documented defaults rather than by changing this
+    /// constructor. [`Default`] remains available for a zeroed vector;
+    /// callers may assign public fields afterward.
     #[must_use]
     pub const fn new(
         dopamine: f32,

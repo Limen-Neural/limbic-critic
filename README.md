@@ -25,11 +25,13 @@ releases (`0.x.y`) are compatible fixes, while breaking changes require a
 minor release (`0.x.0`).
 
 `ModulatorVector` is `#[non_exhaustive]`. Construct it with
-`ModulatorVector::new(...)` or `ModulatorVector::default()` plus public-field
-assignment; do not rely on struct literals, functional-update syntax, or
-exhaustive struct patterns. New fields may be added without breaking that
-construction path, but removing or renaming fields, reordering fields, or
-changing a field's meaning or range remains breaking. `CriticError`,
+`ModulatorVector::new(...)` for the four canonical channels or
+`ModulatorVector::default()` plus public-field assignment; do not rely on
+struct literals or functional-update syntax, and use `..` in struct patterns.
+`new` is intended to keep its four-channel signature as fields are added;
+future fields use documented defaults. New fields may be added without
+breaking those construction paths, but removing or renaming fields, or
+changing a field's meaning or range, remains breaking. `CriticError`,
 `CriticField`, and `NonFiniteKind` are also `#[non_exhaustive]`, so match
 them with a wildcard arm.
 
