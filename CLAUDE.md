@@ -37,6 +37,9 @@ cargo test --all-features --doc
 cargo package --list --allow-dirty
 cargo package --allow-dirty
 
+# Supply-chain gate, exactly as the Audit workflow runs it (cargo-deny 0.20)
+cargo deny --all-features --locked check
+
 # Coverage, exactly as the coverage workflow runs it
 cargo llvm-cov nextest --all-features --profile ci --lcov --output-path lcov.info
 ```
@@ -84,6 +87,10 @@ broken link or malformed code fence in `README.md` fails `cargo doc` under `-D w
 - **Package contents.** The `package` job in `ci.yml` asserts `cargo package --list` against an
   explicit required/forbidden path list. A new development-only file at the repo root will leak
   into the crate unless you add it to `package.exclude` in `Cargo.toml`.
+- **Supply-chain policy.** `.github/workflows/audit.yml` runs `cargo deny check` against
+  `deny.toml` (advisories, MIT/Apache-2.0 only, crates.io only) on PRs, `main`, and weekly.
+  `Cargo.lock` is tracked and CI uses `--locked`, so commit lockfile changes with dependency
+  changes. Keep the trailing `# vX.Y.Z` comment on every SHA-pinned action; Dependabot relies on it.
 - **No sibling Cargo dependencies.** `neuromod`, `plasticity-lab`, and other Limen-Neural SNN
   crates are forbidden as dependencies — the relationship is semantic only. The
   `ModulatorVector` → `neuromod::NeuroModulators` conversion lives in `plasticity-lab`.

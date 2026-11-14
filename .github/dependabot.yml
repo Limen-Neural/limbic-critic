@@ -1,0 +1,33 @@
+# Keeps the SHA-pinned Actions and the Cargo lockfile maintained (RM-2066 /
+# GH#87). Dependabot rewrites `uses: owner/repo@<sha> # vX.Y.Z` pins in
+# place, so keep the trailing version comment on every pin.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "CI/CD"
+      - "GItHub Actions"
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "chore"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"

@@ -24,7 +24,7 @@ jobs:
       # actions/checkout@v7. No submodules, LFS, or custom fetch-depth used in this workflow,
       # so no breaking changes from v5/v6/v7 affect it. Verified against GitHub's official
       # actions/checkout releases.
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -98,11 +98,10 @@ jobs:
             fi
           done
 
-      # Swatinem/rust-cache is used instead of raw actions/cache + static key.
-      # It handles Rust-specific caching (including git deps like neuromod) and
-      # avoids the Cargo.lock gitignore problem that caused stale caches.
+      # Swatinem/rust-cache is used instead of raw actions/cache + static key;
+      # it keys on the committed Cargo.lock.
       - name: Cache cargo registry
-        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       # rustfmt is OS-agnostic; keep it Linux-only like neuromod / axon-encoder.
       - name: Check formatting
@@ -132,7 +131,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -190,7 +189,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -204,7 +203,7 @@ jobs:
           targets: thumbv7em-none-eabihf
 
       - name: Cache cargo registry
-        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
       - name: Build no_std for bare-metal (libm tanh)
         run: cargo build --no-default-features --features libm --target thumbv7em-none-eabihf
@@ -221,7 +220,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -232,13 +231,14 @@ jobs:
           toolchain: "1.99.0"
 
       - name: Cache cargo registry
-        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
 
+      # --locked: the tarball ships the committed Cargo.lock (RM-2066).
       - name: cargo package --list
-        run: cargo package --list --allow-dirty
+        run: cargo package --list --allow-dirty --locked
 
       - name: cargo package
-        run: cargo package --allow-dirty
+        run: cargo package --allow-dirty --locked
 
       # Closed-by-default (GH#72): exact-inventory diff. Any unknown future
       # local/agent/tool directory fails the build by construction, unlike
@@ -282,10 +282,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
-      # Pinned to full commit SHA (v5.0.0).
       - name: REUSE compliance check
-        uses: fsfe/reuse-action@bb774aa972c2a89ff34781233d275075cbddf542
+        uses: fsfe/reuse-action@bb774aa972c2a89ff34781233d275075cbddf542 # v5.0.0

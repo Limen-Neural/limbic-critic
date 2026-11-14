@@ -58,6 +58,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in lockstep across `rust-version`, `rust-toolchain.toml`, and the
   CI/coverage workflows. (LIM-1510, GH#84)
 
+### Security
+
+- Supply-chain gate (RM-2066 / GH#87): a new `Audit` workflow runs
+  `cargo deny check` (RustSec advisories, licenses, bans, sources) against
+  `deny.toml` on every PR, on `main`, and weekly. Policy: MIT / Apache-2.0
+  licenses only, crates.io as the only source, no wildcard requirements,
+  no duplicate versions, yanked and unmaintained crates fail.
+- `Cargo.lock` is now tracked, so the lockfile shipped in the crates.io
+  tarball and scanned by `cargo deny` is the reviewed one (the `package`
+  job and the audit run use `--locked`). Library consumers still resolve
+  their own versions; this does not change downstream builds.
+- Dependabot (`.github/dependabot.yml`) opens weekly grouped bumps for the
+  SHA-pinned GitHub Actions and the Cargo lockfile. Bare SHA pins gained
+  `# vX.Y.Z` comments, and the `Swatinem/rust-cache` pins move to the
+  `v2.9.3` release commit (the `ci.yml` pin did not resolve to any commit
+  in the upstream repository).
+
 ## [0.3.0] - 2026-09-16
 
 ### Added

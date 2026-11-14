@@ -100,7 +100,7 @@ jobs:
       # a tag-ref dispatch with dry_run cannot mark a Linear release released.
       - name: Sync issues into Linear release
         if: steps.version.outputs.version != ''
-        uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0
+        uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0.17.2
         with:
           access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
           command: sync
@@ -109,7 +109,7 @@ jobs:
 
       - name: Complete Linear release for tagged version
         if: github.ref_type == 'tag' && steps.version.outputs.version != ''
-        uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0
+        uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0.17.2
         with:
           access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
           command: complete

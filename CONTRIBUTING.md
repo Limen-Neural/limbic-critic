@@ -64,7 +64,7 @@ cargo clippy --no-default-features --features libm -- -D warnings
 cargo test --no-default-features --features libm
 ```
 
-CI runs two more checks that are easy to miss locally:
+CI runs three more checks that are easy to miss locally:
 
 ```bash
 # `package` job: the published tarball must contain only intended artifacts.
@@ -74,7 +74,16 @@ cargo package --allow-dirty
 
 # Coverage job (a single nextest pass through llvm-cov):
 cargo llvm-cov nextest --all-features --profile ci --lcov --output-path lcov.info
+
+# `Audit` workflow (also weekly): supply-chain policy in deny.toml —
+# RustSec advisories, MIT/Apache-2.0 licenses, crates.io-only sources.
+cargo deny --all-features --locked check
 ```
+
+`Cargo.lock` is tracked. After changing dependencies, commit the updated
+lockfile; CI's `package` and `Audit` jobs run with `--locked` and fail on a
+stale one. A new dependency whose license or source is outside `deny.toml`
+needs that policy widened in the same, reviewed PR.
 
 If you add a development-only file, check whether it belongs in `package.exclude`
 in `Cargo.toml` so it does not ship to crates.io.

@@ -18,6 +18,7 @@ path = [
     "**/*.md",
     "Cargo.toml",
     "Cargo.lock",
+    "deny.toml",
     "codecov.yml",
     "rust-toolchain.toml",
     ".gitignore",

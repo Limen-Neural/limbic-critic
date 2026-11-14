@@ -1,0 +1,35 @@
+# Supply-chain gate (RM-2066 / GH#87): cargo-deny checks RustSec
+# advisories, licenses, bans, and sources against deny.toml. Separate from
+# ci.yml so the weekly scheduled run re-checks new advisories without
+# re-running the full OS test matrix.
+# Third-party Actions are pinned to immutable commit SHAs (Aikido supply-chain policy).
+name: Audit
+
+permissions: {}
+
+on:
+  push:
+    branches: [main]
+  # Match ci.yml: stacked PRs targeting feature branches are gated too.
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+
+jobs:
+  cargo-deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # --locked: scan exactly the committed Cargo.lock (the one that ships
+      # in the crates.io tarball) and fail if it is stale.
+      - name: cargo deny check (advisories, licenses, bans, sources)
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          arguments: --all-features --locked
+          command: check
