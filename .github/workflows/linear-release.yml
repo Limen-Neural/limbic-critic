@@ -54,7 +54,7 @@ jobs:
     steps:
       # Same immutable SHA as ci.yml / coverage.yml (v7.0.0). fetch-depth: 0
       # is required so the Linear action can scan full commit history.
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -100,7 +100,7 @@ jobs:
       # a tag-ref dispatch with dry_run cannot mark a Linear release released.
       - name: Sync issues into Linear release
         if: steps.version.outputs.version != ''
-        uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0.17.2
+        uses: linear/linear-release-action@dd4fc407f860b9460d2cf0b3fb1edd8985cf443f # v0.18.2
         with:
           access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
           command: sync
@@ -109,7 +109,7 @@ jobs:
 
       - name: Complete Linear release for tagged version
         if: github.ref_type == 'tag' && steps.version.outputs.version != ''
-        uses: linear/linear-release-action@53ad0f863963e7f8e270fba18426bbb55ef55384 # v0.17.2
+        uses: linear/linear-release-action@dd4fc407f860b9460d2cf0b3fb1edd8985cf443f # v0.18.2
         with:
           access_key: ${{ secrets.LINEAR_ACCESS_KEY }}
           command: complete
