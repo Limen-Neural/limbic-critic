@@ -276,6 +276,63 @@ jobs:
           fi
           echo "Package include/exclude checks passed."
 
+  # Public API gate (RM-2067 / GH#88). cargo-semver-checks diffs the PR's
+  # rustdoc API against the latest normal (not yanked or pre-release)
+  # crates.io release, so no baseline file lives in this repository. After a
+  # version bump is published, that registry baseline advances automatically
+  # on the next PR.
+  # The action derives the required release type from Cargo.toml's version,
+  # so an under-declared version bump fails here.
+  semver-checks:
+    name: Semver compatibility
+    runs-on: ubuntu-latest
+    # The crates.io baseline only matters while a change is under review.
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Keep the rustdoc toolchain deterministic and in lockstep with the
+      # repo's dev pin; `rust-toolchain: manual` below makes the action use
+      # this toolchain instead of installing floating stable.
+      - name: Install Rust 1.99.0
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # v1
+        with:
+          toolchain: "1.99.0"
+
+      # Pin the checker binary as well as the action wrapper: when the binary
+      # is absent, the action otherwise downloads the latest cargo-semver-checks
+      # release, so lint behavior could change without a repository change.
+      - name: Install cargo-semver-checks 0.51.0
+        uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
+        with:
+          tool: cargo-semver-checks@0.51.0
+
+      # Check two semver surfaces instead of relying on the action's
+      # heuristic: the default `std` API is what most downstream users
+      # consume, while `--all-features` is the maximal published API
+      # (currently `std` + `libm`). This is not the libm-only embedded
+      # configuration; CONTRIBUTING.md documents why that is compile-tested
+      # but not a separate crates.io semver baseline today. The action's
+      # rustdoc cache key does not include the feature selection, so
+      # prefix-key keeps the two baselines distinct.
+      - name: Check semver (default std API)
+        uses: obi1kenobi/cargo-semver-checks-action@6b69fcf40e9b5fb17adeb57e4b6ecd020649a239 # v2.9
+        with:
+          feature-group: default-features
+          prefix-key: default-std
+          rust-toolchain: manual
+
+      - name: Check semver (all-features API)
+        uses: obi1kenobi/cargo-semver-checks-action@6b69fcf40e9b5fb17adeb57e4b6ecd020649a239 # v2.9
+        with:
+          feature-group: all-features
+          prefix-key: all-features
+          rust-toolchain: manual
+
   reuse:
     name: REUSE lint
     runs-on: ubuntu-latest

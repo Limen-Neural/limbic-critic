@@ -97,6 +97,27 @@ CI's **Build & Test** job runs on `ubuntu-latest`, `macos-latest`, and
 `windows-latest` with `fail-fast: false`. `cargo fmt --check` and `cargo doc`
 run on Linux only; the `package` job stays on `ubuntu-latest`.
 
+## Public API semver gate
+
+CI's `semver-checks` job runs on pull requests only. It uses
+`cargo semver-checks` to diff the proposed public API against the latest
+normal (not yanked or pre-release) crates.io release no newer than the
+version in the checked-out `Cargo.toml`, so no API baseline file is
+maintained in this repository. After a version bump is published, the
+registry baseline advances automatically for subsequent PRs.
+
+The job checks two semver surfaces explicitly: the default `std` feature
+set and the maximal `--all-features` surface (currently `std` + `libm`).
+These are not every build permutation. In particular, `--all-features` is
+not the embedded `--no-default-features --features libm` configuration;
+that configuration is compile- and test-covered by the `no_std` job. It is
+not a separate semver surface today because the published 0.3.0 baseline
+predates the `libm` feature, so the same feature cannot be enabled on both
+sides of the comparison. Keep the public API feature-independent; if a
+feature-gated API is ever introduced, extend this gate deliberately.
+`cargo-semver-checks` derives the required release type from the version
+in `Cargo.toml`, so an under-declared version bump fails the job.
+
 ## Licensing
 
 This project is dual-licensed under MIT OR Apache-2.0 and is
