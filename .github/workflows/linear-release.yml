@@ -52,13 +52,6 @@ jobs:
     permissions:
       contents: read
     steps:
-      # Same immutable SHA as ci.yml / coverage.yml (v7.0.0). fetch-depth: 0
-      # is required so the Linear action can scan full commit history.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
       # Push to main: hardcoded 0.4.0 (Linear In Progress), same active-train
       # pattern as synaptic-mesh. After 0.4.0 is completed, bump this default
       # (and workflow_dispatch default) when the next Linear release opens. Do
@@ -109,6 +102,15 @@ jobs:
             echo "::error::LINEAR_ACCESS_KEY is empty. Grant the Limen-Neural organization Actions secret to limbic-critic, or add a repository-level secret."
             exit 1
           fi
+
+      # Checkout only after the version and credential guard pass, so a
+      # missing key fails before cloning. Same immutable SHA as ci.yml /
+      # coverage.yml (v7.0.1). fetch-depth: 0 is required so the Linear
+      # action can scan full commit history.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
 
       # dry_run only on workflow_dispatch when requested (default true there).
       # Main pushes and tag pushes always mutate. Same expression on complete so
