@@ -80,21 +80,6 @@ cargo llvm-cov nextest --all-features --profile ci --lcov --output-path lcov.inf
 cargo deny --all-features --locked check
 ```
 
-## Public API semver gate
-
-CI's `semver-checks` job runs on pull requests only. It uses
-`cargo semver-checks` to diff the proposed public API against the latest
-normal (not yanked or pre-release) crates.io release, so no API baseline
-file is maintained in this repository. After a release is published, the
-baseline advances automatically for subsequent PRs.
-
-The job checks both supported feature surfaces explicitly: the default
-`std` feature set and the maximal `--all-features` surface (currently
-`std` + `libm`). Keep public API additions and removals semver-compatible
-on both surfaces; feature-specific API differences must not be introduced
-silently. `cargo-semver-checks` derives the required release type from the
-version in `Cargo.toml`, so an under-declared version bump fails the job.
-
 `Cargo.lock` is tracked. After changing dependencies, commit the updated
 lockfile; CI's `package` and `Audit` jobs run with `--locked` and fail on a
 stale one. A new dependency whose license or source is outside `deny.toml`
@@ -111,6 +96,26 @@ The dev toolchain (`rust-toolchain.toml`, `ci.yml`, `coverage.yml`, currently
 CI's **Build & Test** job runs on `ubuntu-latest`, `macos-latest`, and
 `windows-latest` with `fail-fast: false`. `cargo fmt --check` and `cargo doc`
 run on Linux only; the `package` job stays on `ubuntu-latest`.
+
+## Public API semver gate
+
+CI's `semver-checks` job runs on pull requests only. It uses
+`cargo semver-checks` to diff the proposed public API against the latest
+normal (not yanked or pre-release) crates.io release, so no API baseline
+file is maintained in this repository. After a version bump is published,
+the registry baseline advances automatically for subsequent PRs.
+
+The job checks two semver surfaces explicitly: the default `std` feature
+set and the maximal `--all-features` surface (currently `std` + `libm`).
+These are not every build permutation. In particular, `--all-features` is
+not the embedded `--no-default-features --features libm` configuration;
+that configuration is compile- and test-covered by the `no_std` job. It is
+not a separate semver surface today because the published 0.3.0 baseline
+predates the `libm` feature, so the same feature cannot be enabled on both
+sides of the comparison. Keep the public API feature-independent; if a
+feature-gated API is ever introduced, extend this gate deliberately.
+`cargo-semver-checks` derives the required release type from the version
+in `Cargo.toml`, so an under-declared version bump fails the job.
 
 ## Licensing
 
