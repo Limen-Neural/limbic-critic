@@ -103,11 +103,12 @@ jobs:
             exit 1
           fi
 
-      # Checkout only after the version and credential guard pass, so a
-      # missing key fails before cloning. Same immutable SHA as ci.yml /
-      # coverage.yml (v7.0.1). fetch-depth: 0 is required so the Linear
-      # action can scan full commit history.
+      # Checkout only for a non-empty version after the credential guard,
+      # so a missing key fails before cloning and ignored refs skip cleanly.
+      # Same immutable SHA as ci.yml / coverage.yml (v7.0.1). fetch-depth: 0
+      # is required so the Linear action can scan full commit history.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.version.outputs.version != ''
         with:
           persist-credentials: false
           fetch-depth: 0
