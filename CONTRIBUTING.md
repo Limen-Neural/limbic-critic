@@ -101,9 +101,10 @@ run on Linux only; the `package` job stays on `ubuntu-latest`.
 
 CI's `semver-checks` job runs on pull requests only. It uses
 `cargo semver-checks` to diff the proposed public API against the latest
-normal (not yanked or pre-release) crates.io release, so no API baseline
-file is maintained in this repository. After a version bump is published,
-the registry baseline advances automatically for subsequent PRs.
+normal (not yanked or pre-release) crates.io release no newer than the
+version in the checked-out `Cargo.toml`, so no API baseline file is
+maintained in this repository. After a version bump is published, the
+registry baseline advances automatically for subsequent PRs.
 
 The job checks two semver surfaces explicitly: the default `std` feature
 set and the maximal `--all-features` surface (currently `std` + `libm`).
